@@ -1,0 +1,19 @@
+# Ignore all files and directories except lib, test and pubspec.yaml
+/.DS_Store
+/.dart_tool/
+/.flutter-plugins-dependencies
+/.idea/
+/.metadata
+/README.md
+/active.iml
+/analysis_options.yaml
+/android/
+/build/
+/firebase.json
+/ios/
+/linux/
+/macos/
+/pubspec.lock
+/srs.md
+/web/
+/windows/
