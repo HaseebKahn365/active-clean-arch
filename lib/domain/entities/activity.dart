@@ -1,6 +1,8 @@
+import 'package:equatable/equatable.dart';
+
 enum ActivityStatus { running, paused, completed }
 
-class Activity {
+class Activity extends Equatable {
   final String id;
   final String name;
   final String? parentId;
@@ -21,7 +23,7 @@ class Activity {
 
   Activity copyWith({
     String? name,
-    String? parentId,
+    String? Function()? parentId,
     List<String>? childrenIds,
     ActivityStatus? status,
     DateTime? startedAt,
@@ -30,11 +32,14 @@ class Activity {
     return Activity(
       id: id,
       name: name ?? this.name,
-      parentId: parentId ?? this.parentId,
+      parentId: parentId != null ? parentId() : this.parentId,
       childrenIds: childrenIds ?? this.childrenIds,
       status: status ?? this.status,
       startedAt: startedAt ?? this.startedAt,
       totalSeconds: totalSeconds ?? this.totalSeconds,
     );
   }
+
+  @override
+  List<Object?> get props => [id, name, parentId, childrenIds, status, startedAt, totalSeconds];
 }

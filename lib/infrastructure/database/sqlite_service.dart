@@ -1,15 +1,15 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
-class DatabaseService {
-  static final DatabaseService instance = DatabaseService._init();
+class SqliteService {
+  static final SqliteService instance = SqliteService._init();
   static Database? _database;
 
-  DatabaseService._init();
+  SqliteService._init();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('activities.db');
+    _database = await _initDB('active.db');
     return _database!;
   }
 

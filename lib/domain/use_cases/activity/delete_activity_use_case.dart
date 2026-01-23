@@ -28,7 +28,7 @@ class DeleteActivityUseCase {
     for (final childId in childrenIds) {
       final child = await repository.getActivityById(childId);
       if (child != null) {
-        await repository.updateActivity(child.copyWith(parentId: parentId));
+        await repository.updateActivity(child.copyWith(parentId: () => parentId));
       }
     }
 
