@@ -30,7 +30,18 @@ class SqliteService {
         status TEXT NOT NULL,
         started_at TEXT,
         total_seconds INTEGER NOT NULL
-      )
+      );
+
+      CREATE TABLE activity_events (
+        id TEXT PRIMARY KEY,
+        activity_id TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        duration_delta INTEGER NOT NULL,
+        previous_status TEXT NOT NULL,
+        next_status TEXT NOT NULL,
+        is_synced INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE
+      );
     ''');
   }
 

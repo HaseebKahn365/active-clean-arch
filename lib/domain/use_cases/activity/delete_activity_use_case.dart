@@ -1,11 +1,16 @@
 import 'package:active/domain/repositories/activity_repository.dart';
+import 'pause_activity_use_case.dart';
 
 class DeleteActivityUseCase {
   final ActivityRepository repository;
+  final PauseActivityUseCase pauseActivityUseCase;
 
-  DeleteActivityUseCase(this.repository);
+  DeleteActivityUseCase(this.repository, this.pauseActivityUseCase);
 
   Future<void> execute(String activityId) async {
+    // 0. Finalize time if running
+    await pauseActivityUseCase.execute(activityId);
+
     final activityToDelete = await repository.getActivityById(activityId);
     if (activityToDelete == null) return;
 

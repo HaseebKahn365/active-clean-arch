@@ -26,7 +26,7 @@ class Activity extends Equatable {
     String? Function()? parentId,
     List<String>? childrenIds,
     ActivityStatus? status,
-    DateTime? startedAt,
+    DateTime? Function()? startedAt,
     int? totalSeconds,
   }) {
     return Activity(
@@ -35,7 +35,7 @@ class Activity extends Equatable {
       parentId: parentId != null ? parentId() : this.parentId,
       childrenIds: childrenIds ?? this.childrenIds,
       status: status ?? this.status,
-      startedAt: startedAt ?? this.startedAt,
+      startedAt: startedAt != null ? startedAt() : this.startedAt,
       totalSeconds: totalSeconds ?? this.totalSeconds,
     );
   }

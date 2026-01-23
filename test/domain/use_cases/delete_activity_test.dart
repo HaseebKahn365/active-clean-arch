@@ -1,10 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:active/domain/entities/activity.dart';
+import 'package:active/domain/entities/activity_event.dart';
 import 'package:active/domain/repositories/activity_repository.dart';
 import 'package:active/domain/use_cases/activity/delete_activity_use_case.dart';
+import 'package:active/domain/use_cases/activity/pause_activity_use_case.dart';
 
 class MockActivityRepository implements ActivityRepository {
   final Map<String, Activity> activities = {};
+  final List<ActivityEvent> events = [];
 
   @override
   Future<List<Activity>> getAllActivities() async => activities.values.toList();
@@ -26,15 +29,35 @@ class MockActivityRepository implements ActivityRepository {
   Future<void> updateActivity(Activity activity) async {
     activities[activity.id] = activity;
   }
+
+  @override
+  Future<void> saveEvent(ActivityEvent event) async {
+    events.add(event);
+  }
+
+  @override
+  Future<List<ActivityEvent>> getUnsyncedEvents() async {
+    return events.where((e) => !e.isSynced).toList();
+  }
+
+  @override
+  Future<void> markEventAsSynced(String id) async {
+    final index = events.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      // Note: ActivityEvent is immutable
+    }
+  }
 }
 
 void main() {
   late DeleteActivityUseCase deleteActivityUseCase;
+  late PauseActivityUseCase pauseActivityUseCase;
   late MockActivityRepository mockRepository;
 
   setUp(() {
     mockRepository = MockActivityRepository();
-    deleteActivityUseCase = DeleteActivityUseCase(mockRepository);
+    pauseActivityUseCase = PauseActivityUseCase(mockRepository);
+    deleteActivityUseCase = DeleteActivityUseCase(mockRepository, pauseActivityUseCase);
   });
 
   test('should reattach children to parent when an activity is deleted', () async {
