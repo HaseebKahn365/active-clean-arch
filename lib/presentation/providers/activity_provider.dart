@@ -7,6 +7,7 @@ import '../../domain/use_cases/activity/start_activity_use_case.dart';
 import '../../domain/use_cases/activity/pause_activity_use_case.dart';
 import '../../domain/use_cases/activity/complete_activity_use_case.dart';
 import '../../domain/use_cases/activity/checkpoint_activity_use_case.dart';
+import '../../domain/use_cases/activity/create_activity_use_case.dart';
 
 class ActivityController extends ChangeNotifier {
   final GetActivitiesUseCase getActivitiesUseCase;
@@ -15,6 +16,7 @@ class ActivityController extends ChangeNotifier {
   final PauseActivityUseCase pauseActivityUseCase;
   final CompleteActivityUseCase completeActivityUseCase;
   final CheckpointActivityUseCase checkpointActivityUseCase;
+  final CreateActivityUseCase createActivityUseCase;
 
   ActivityController({
     required this.getActivitiesUseCase,
@@ -23,6 +25,7 @@ class ActivityController extends ChangeNotifier {
     required this.pauseActivityUseCase,
     required this.completeActivityUseCase,
     required this.checkpointActivityUseCase,
+    required this.createActivityUseCase,
   });
 
   Map<String, Activity> _activitiesMap = {};
@@ -108,6 +111,11 @@ class ActivityController extends ChangeNotifier {
 
   Future<void> completeActivity(String id) async {
     await completeActivityUseCase.execute(id);
+    await loadActivities();
+  }
+
+  Future<void> createActivity(String name, {String? parentId}) async {
+    await createActivityUseCase.execute(name, parentId: parentId);
     await loadActivities();
   }
 

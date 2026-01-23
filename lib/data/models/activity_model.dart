@@ -10,6 +10,8 @@ class ActivityModel extends Activity {
     required super.status,
     super.startedAt,
     required super.totalSeconds,
+    required super.createdAt,
+    required super.updatedAt,
   });
 
   factory ActivityModel.fromEntity(Activity entity) {
@@ -21,6 +23,8 @@ class ActivityModel extends Activity {
       status: entity.status,
       startedAt: entity.startedAt,
       totalSeconds: entity.totalSeconds,
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
     );
   }
 
@@ -33,6 +37,8 @@ class ActivityModel extends Activity {
       status: ActivityStatus.values.firstWhere((e) => e.toString() == map['status']),
       startedAt: map['started_at'] != null ? DateTime.parse(map['started_at']) : null,
       totalSeconds: map['total_seconds'],
+      createdAt: DateTime.parse(map['created_at']),
+      updatedAt: DateTime.parse(map['updated_at']),
     );
   }
 
@@ -45,6 +51,8 @@ class ActivityModel extends Activity {
       'status': status.toString(),
       'started_at': startedAt?.toIso8601String(),
       'total_seconds': totalSeconds,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }

@@ -1,0 +1,35 @@
+Analyzing active...                                             
+
+  error • The named parameter 'childrenIds' is required, but there's no corresponding argument • lib/domain/use_cases/activity/create_activity_use_case.dart:11:22 • missing_required_argument
+  error • There's no constant named 'idle' in 'ActivityStatus' • lib/domain/use_cases/activity/create_activity_use_case.dart:14:30 • undefined_enum_constant
+  error • The named parameter 'createdAt' isn't defined • lib/domain/use_cases/activity/create_activity_use_case.dart:17:7 • undefined_named_parameter
+  error • The named parameter 'updatedAt' isn't defined • lib/domain/use_cases/activity/create_activity_use_case.dart:18:7 • undefined_named_parameter
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/auth/sign_in_page.dart:38:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/auth/sign_in_page.dart:40:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/auth/sign_in_page.dart:68:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:100:74 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:178:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:185:52 • deprecated_member_use
+  error • Target of URI doesn't exist: '../../../domain/entities/activity.dart' • lib/presentation/pages/dashboard/widgets/activity_list.dart:3:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../../providers/activity_provider.dart' • lib/presentation/pages/dashboard/widgets/activity_list.dart:4:8 • uri_does_not_exist
+  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_list.dart:12:21 • non_type_as_type_argument
+  error • The property 'isLoading' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_list.dart:14:24 • unchecked_use_of_nullable_value
+  error • The property 'roots' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_list.dart:14:48 • unchecked_use_of_nullable_value
+  error • The property 'roots' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_list.dart:18:34 • unchecked_use_of_nullable_value
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/widgets/activity_tile.dart:20:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/widgets/activity_tile.dart:29:44 • deprecated_member_use
+warning • This default clause is covered by the previous cases • lib/presentation/pages/dashboard/widgets/activity_tile.dart:115:7 • unreachable_switch_default
+warning • This default clause is covered by the previous cases • lib/presentation/pages/dashboard/widgets/activity_tile.dart:128:7 • unreachable_switch_default
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/widgets/activity_tile.dart:183:48 • deprecated_member_use
+  error • Target of URI doesn't exist: '../../providers/activity_provider.dart' • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:3:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../../theme/app_colors.dart' • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:4:8 • uri_does_not_exist
+  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:25:20 • non_type_as_type_argument
+  error • Invalid constant value • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:42:82 • invalid_constant
+  error • Undefined name 'AppColors' • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:42:82 • undefined_identifier
+  error • Invalid constant value • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:47:39 • invalid_constant
+  error • Undefined name 'AppColors' • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:47:39 • undefined_identifier
+  error • Undefined name 'AppColors' • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:72:34 • undefined_identifier
+  error • The argument type 'CardTheme' can't be assigned to the parameter type 'CardThemeData?'.  • lib/presentation/theme/app_theme.dart:32:18 • argument_type_not_assignable
+  error • The argument type 'CardTheme' can't be assigned to the parameter type 'CardThemeData?'.  • lib/presentation/theme/app_theme.dart:56:18 • argument_type_not_assignable
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/theme/app_theme.dart:61:48 • deprecated_member_use
+

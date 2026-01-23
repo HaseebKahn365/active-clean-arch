@@ -1,0 +1,26 @@
+Analyzing active...                                             
+
+  error • The implicitly invoked unnamed constructor from 'Activity' has required parameters • lib/data/models/activity_model.dart:5:9 • implicit_super_initializer_missing_arguments
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/auth/sign_in_page.dart:38:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/auth/sign_in_page.dart:40:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/auth/sign_in_page.dart:68:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:100:74 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:178:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:185:52 • deprecated_member_use
+  error • Target of URI doesn't exist: '../../../domain/entities/activity.dart' • lib/presentation/pages/dashboard/widgets/activity_list.dart:3:8 • uri_does_not_exist
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/widgets/activity_tile.dart:20:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/widgets/activity_tile.dart:29:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/widgets/activity_tile.dart:183:48 • deprecated_member_use
+  error • The named parameter 'createdAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:65:21 • missing_required_argument
+  error • The named parameter 'updatedAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:65:21 • missing_required_argument
+  error • The named parameter 'createdAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:72:20 • missing_required_argument
+  error • The named parameter 'updatedAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:72:20 • missing_required_argument
+  error • The named parameter 'createdAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:80:20 • missing_required_argument
+  error • The named parameter 'updatedAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:80:20 • missing_required_argument
+  error • The named parameter 'createdAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:88:20 • missing_required_argument
+  error • The named parameter 'updatedAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:88:20 • missing_required_argument
+  error • The named parameter 'createdAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:121:20 • missing_required_argument
+  error • The named parameter 'updatedAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:121:20 • missing_required_argument
+  error • The named parameter 'createdAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:129:20 • missing_required_argument
+  error • The named parameter 'updatedAt' is required, but there's no corresponding argument • test/domain/use_cases/delete_activity_test.dart:129:20 • missing_required_argument
+

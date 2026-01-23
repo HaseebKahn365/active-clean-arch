@@ -61,37 +61,45 @@ void main() {
   });
 
   test('should reattach children to parent when an activity is deleted', () async {
-    // Arrange: Create Grandpa -> Parent -> Child1, Child2
-    const grandpa = Activity(
+    final now = DateTime.now();
+    final grandpa = Activity(
       id: 'grandpa',
       name: 'Grandpa',
-      childrenIds: ['parent'],
+      childrenIds: const ['parent'],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      createdAt: now,
+      updatedAt: now,
     );
-    const parent = Activity(
+    final parent = Activity(
       id: 'parent',
       name: 'Parent',
       parentId: 'grandpa',
-      childrenIds: ['child1', 'child2'],
+      childrenIds: const ['child1', 'child2'],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      createdAt: now,
+      updatedAt: now,
     );
-    const child1 = Activity(
+    final child1 = Activity(
       id: 'child1',
       name: 'Child 1',
       parentId: 'parent',
-      childrenIds: [],
+      childrenIds: const [],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      createdAt: now,
+      updatedAt: now,
     );
-    const child2 = Activity(
+    final child2 = Activity(
       id: 'child2',
       name: 'Child 2',
       parentId: 'parent',
-      childrenIds: [],
+      childrenIds: const [],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      createdAt: now,
+      updatedAt: now,
     );
 
     mockRepository.activities['grandpa'] = grandpa;
@@ -117,22 +125,27 @@ void main() {
   });
 
   test('should make children roots when a root activity is deleted', () async {
+    final now = DateTime.now();
     // Arrange: Parent (Root) -> Child1
-    const parent = Activity(
+    final parent = Activity(
       id: 'parent',
       name: 'Parent',
       parentId: null,
-      childrenIds: ['child1'],
+      childrenIds: const ['child1'],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      createdAt: now,
+      updatedAt: now,
     );
-    const child1 = Activity(
+    final child1 = Activity(
       id: 'child1',
       name: 'Child 1',
       parentId: 'parent',
-      childrenIds: [],
+      childrenIds: const [],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      createdAt: now,
+      updatedAt: now,
     );
 
     mockRepository.activities['parent'] = parent;

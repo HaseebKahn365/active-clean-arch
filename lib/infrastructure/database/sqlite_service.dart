@@ -29,7 +29,9 @@ class SqliteService {
         children_ids TEXT NOT NULL,
         status TEXT NOT NULL,
         started_at TEXT,
-        total_seconds INTEGER NOT NULL
+        total_seconds INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       );
 
       CREATE TABLE activity_events (

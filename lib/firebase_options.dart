@@ -63,6 +63,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '869878965251',
     projectId: 'active-app-12345',
     storageBucket: 'active-app-12345.firebasestorage.app',
+    androidClientId: '869878965251-mro4id54p9d9tm7o2l3la9e2sckpacqa.apps.googleusercontent.com',
+    iosClientId: '869878965251-hu26e5h89gdvg4ip3j0f6o044ckqog0l.apps.googleusercontent.com',
     iosBundleId: 'com.example.active',
   );
 
@@ -72,6 +74,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '869878965251',
     projectId: 'active-app-12345',
     storageBucket: 'active-app-12345.firebasestorage.app',
+    androidClientId: '869878965251-mro4id54p9d9tm7o2l3la9e2sckpacqa.apps.googleusercontent.com',
+    iosClientId: '869878965251-hu26e5h89gdvg4ip3j0f6o044ckqog0l.apps.googleusercontent.com',
     iosBundleId: 'com.example.active',
   );
 
@@ -83,4 +87,5 @@ class DefaultFirebaseOptions {
     authDomain: 'active-app-12345.firebaseapp.com',
     storageBucket: 'active-app-12345.firebasestorage.app',
   );
+
 }

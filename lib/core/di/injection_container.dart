@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../infrastructure/database/sqlite_service.dart';
+import '../../infrastructure/auth/google_auth_service.dart';
 import '../../domain/repositories/activity_repository.dart';
 import '../../data/repositories/activity_repository_impl.dart';
 import '../../domain/repositories/sync_repository.dart';
@@ -13,9 +14,12 @@ import '../../domain/use_cases/activity/start_activity_use_case.dart';
 import '../../domain/use_cases/activity/pause_activity_use_case.dart';
 import '../../domain/use_cases/activity/complete_activity_use_case.dart';
 import '../../domain/use_cases/activity/checkpoint_activity_use_case.dart';
+import '../../domain/use_cases/activity/create_activity_use_case.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../presentation/providers/activity_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
 import '../../presentation/providers/sync_provider.dart';
+import '../../presentation/providers/theme_provider.dart';
 
 final sl = GetIt.instance;
 
@@ -25,8 +29,15 @@ Future<void> init() async {
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
   sl.registerLazySingleton(() => Connectivity());
 
+  final sharedPrefs = await SharedPreferences.getInstance();
+  sl.registerLazySingleton(() => sharedPrefs);
+
+  // Infrastructure
+  sl.registerLazySingleton(() => SqliteService.instance);
+  sl.registerLazySingleton(() => GoogleAuthService());
+
   // Presentation / State Management
-  sl.registerFactory(() => AppAuthProvider());
+  sl.registerFactory(() => AppAuthProvider(sl()));
   sl.registerFactory(
     () => ActivityController(
       getActivitiesUseCase: sl(),
@@ -35,9 +46,11 @@ Future<void> init() async {
       pauseActivityUseCase: sl(),
       completeActivityUseCase: sl(),
       checkpointActivityUseCase: sl(),
+      createActivityUseCase: sl(),
     ),
   );
   sl.registerFactory(() => SyncController(activityRepository: sl(), syncRepository: sl(), connectivity: sl()));
+  sl.registerLazySingleton(() => ThemeProvider(sl()));
 
   // Use Cases
   sl.registerLazySingleton(() => GetActivitiesUseCase(sl()));
@@ -46,11 +59,9 @@ Future<void> init() async {
   sl.registerLazySingleton(() => PauseActivityUseCase(sl()));
   sl.registerLazySingleton(() => CompleteActivityUseCase(sl(), sl()));
   sl.registerLazySingleton(() => CheckpointActivityUseCase(sl()));
+  sl.registerLazySingleton(() => CreateActivityUseCase(sl()));
 
   // Repository
   sl.registerLazySingleton<ActivityRepository>(() => ActivityRepositoryImpl(sl()));
   sl.registerLazySingleton<SyncRepository>(() => SyncRepositoryImpl(sl()));
-
-  // Infrastructure
-  sl.registerLazySingleton(() => SqliteService.instance);
 }

@@ -1,0 +1,13 @@
+Analyzing active...                                             
+
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/auth/sign_in_page.dart:38:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/auth/sign_in_page.dart:40:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/auth/sign_in_page.dart:68:55 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:100:74 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:178:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:185:52 • deprecated_member_use
+warning • Unused import: '../../../../domain/entities/activity.dart' • lib/presentation/pages/dashboard/widgets/activity_list.dart:3:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/widgets/activity_tile.dart:20:51 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/widgets/activity_tile.dart:29:44 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/widgets/activity_tile.dart:183:48 • deprecated_member_use
+
