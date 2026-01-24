@@ -17,6 +17,8 @@ class SyncRepositoryImpl implements SyncRepository {
       durationDelta: event.durationDelta,
       previousStatus: event.previousStatus,
       nextStatus: event.nextStatus,
+      oldParentId: event.oldParentId,
+      newParentId: event.newParentId,
       isSynced: true, // It's being synced now
     );
 

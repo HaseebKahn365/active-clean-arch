@@ -193,20 +193,39 @@ class _Breadcrumbs extends StatelessWidget {
 
   Widget _breadcrumbItem(BuildContext context, String title, String? id, {required bool isLink}) {
     final colorScheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: isLink ? () => id == null ? onHome() : onTap(id) : null,
-      borderRadius: BorderRadius.circular(4),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isLink ? colorScheme.primary : colorScheme.onSurface,
-            fontWeight: isLink ? FontWeight.normal : FontWeight.bold,
-            fontSize: 14,
+    return DragTarget<Activity>(
+      onWillAcceptWithDetails: (details) {
+        // Can drop any activity onto a breadcrumb level unless it's itself
+        return details.data.id != id;
+      },
+      onAcceptWithDetails: (details) {
+        context.read<ActivityController>().moveActivity(details.data.id, id);
+      },
+      builder: (context, candidateData, _) {
+        final isHighlighted = candidateData.isNotEmpty;
+        return Container(
+          decoration: BoxDecoration(
+            color: isHighlighted ? colorScheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(4),
+            border: isHighlighted ? Border.all(color: colorScheme.primary) : null,
           ),
-        ),
-      ),
+          child: InkWell(
+            onTap: isLink ? () => id == null ? onHome() : onTap(id) : null,
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: isLink ? colorScheme.primary : colorScheme.onSurface,
+                  fontWeight: isLink ? FontWeight.normal : FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

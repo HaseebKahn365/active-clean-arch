@@ -8,6 +8,8 @@ class ActivityEvent extends Equatable {
   final int durationDelta;
   final ActivityStatus previousStatus;
   final ActivityStatus nextStatus;
+  final String? oldParentId;
+  final String? newParentId;
   final bool isSynced;
 
   const ActivityEvent({
@@ -17,9 +19,21 @@ class ActivityEvent extends Equatable {
     required this.durationDelta,
     required this.previousStatus,
     required this.nextStatus,
+    this.oldParentId,
+    this.newParentId,
     this.isSynced = false,
   });
 
   @override
-  List<Object?> get props => [id, activityId, timestamp, durationDelta, previousStatus, nextStatus, isSynced];
+  List<Object?> get props => [
+    id,
+    activityId,
+    timestamp,
+    durationDelta,
+    previousStatus,
+    nextStatus,
+    oldParentId,
+    newParentId,
+    isSynced,
+  ];
 }

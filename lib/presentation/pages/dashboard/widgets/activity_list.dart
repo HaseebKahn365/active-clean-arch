@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../domain/entities/activity.dart';
 import '../../../providers/activity_provider.dart';
 import 'activity_tile.dart';
 
@@ -20,13 +21,36 @@ class ActivityList extends StatelessWidget {
           return child!;
         }
 
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: roots.length,
-          itemBuilder: (context, index) {
-            final activity = roots[index];
-            return ActivityTile(activity: activity);
+        return DragTarget<Activity>(
+          onWillAcceptWithDetails: (details) {
+            // Can move to root if it's not already at root
+            return details.data.parentId != null;
+          },
+          onAcceptWithDetails: (details) {
+            controller.moveActivity(details.data.id, null);
+          },
+          builder: (context, candidateData, _) {
+            final isHighlighted = candidateData.isNotEmpty;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: isHighlighted ? const EdgeInsets.all(8) : EdgeInsets.zero,
+              decoration: BoxDecoration(
+                color: isHighlighted
+                    ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.05)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(24),
+                border: isHighlighted ? Border.all(color: Theme.of(context).colorScheme.primary) : null,
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: roots.length,
+                itemBuilder: (context, index) {
+                  final activity = roots[index];
+                  return ActivityTile(activity: activity);
+                },
+              ),
+            );
           },
         );
       },

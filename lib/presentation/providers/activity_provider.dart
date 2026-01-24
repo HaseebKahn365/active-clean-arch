@@ -11,6 +11,7 @@ import '../../domain/use_cases/activity/create_activity_use_case.dart';
 import '../../domain/use_cases/activity/get_breadcrumbs_use_case.dart';
 import '../../domain/use_cases/activity/update_activity_use_case.dart';
 import '../../domain/use_cases/activity/toggle_pin_use_case.dart';
+import '../../domain/use_cases/activity/move_activity_use_case.dart';
 
 class ActivityController extends ChangeNotifier {
   final GetActivitiesUseCase getActivitiesUseCase;
@@ -23,6 +24,7 @@ class ActivityController extends ChangeNotifier {
   final GetBreadcrumbsUseCase getBreadcrumbsUseCase;
   final UpdateActivityUseCase updateActivityUseCase;
   final TogglePinUseCase togglePinUseCase;
+  final MoveActivityUseCase moveActivityUseCase;
 
   ActivityController({
     required this.getActivitiesUseCase,
@@ -35,6 +37,7 @@ class ActivityController extends ChangeNotifier {
     required this.getBreadcrumbsUseCase,
     required this.updateActivityUseCase,
     required this.togglePinUseCase,
+    required this.moveActivityUseCase,
   });
 
   Map<String, Activity> _activitiesMap = {};
@@ -144,6 +147,11 @@ class ActivityController extends ChangeNotifier {
 
   Future<void> togglePin(String id) async {
     await togglePinUseCase.execute(id);
+    await loadActivities();
+  }
+
+  Future<void> moveActivity(String activityId, String? newParentId) async {
+    await moveActivityUseCase.execute(activityId, newParentId);
     await loadActivities();
   }
 

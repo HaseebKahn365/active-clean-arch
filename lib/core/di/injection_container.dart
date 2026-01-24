@@ -18,6 +18,7 @@ import '../../domain/use_cases/activity/checkpoint_activity_use_case.dart';
 import '../../domain/use_cases/activity/create_activity_use_case.dart';
 import '../../domain/use_cases/activity/update_activity_use_case.dart';
 import '../../domain/use_cases/activity/toggle_pin_use_case.dart';
+import '../../domain/use_cases/activity/move_activity_use_case.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../presentation/providers/activity_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
@@ -53,6 +54,7 @@ Future<void> init() async {
       getBreadcrumbsUseCase: sl(),
       updateActivityUseCase: sl(),
       togglePinUseCase: sl(),
+      moveActivityUseCase: sl(),
     ),
   );
   sl.registerFactory(() => SyncController(activityRepository: sl(), syncRepository: sl(), connectivity: sl()));
@@ -69,6 +71,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetBreadcrumbsUseCase(sl()));
   sl.registerLazySingleton(() => UpdateActivityUseCase(sl()));
   sl.registerLazySingleton(() => TogglePinUseCase(sl()));
+  sl.registerLazySingleton(() => MoveActivityUseCase(sl()));
 
   // Repository
   sl.registerLazySingleton<ActivityRepository>(() => InMemoryActivityRepository());

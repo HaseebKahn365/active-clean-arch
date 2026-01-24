@@ -1,3 +1,4 @@
+import 'package:active/domain/entities/activity.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/activity_provider.dart';
@@ -36,37 +37,32 @@ class PinnedActivityList extends StatelessWidget {
             itemCount: pinned.length,
             itemBuilder: (context, index) {
               final activity = pinned[index];
-              return Container(
-                width: 160,
-                margin: const EdgeInsets.only(right: 16),
-                child: Material(
-                  color: Theme.of(context).cardTheme.color,
-                  borderRadius: BorderRadius.circular(24),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(24),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ActivityDetailPage(activityId: activity.id)),
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: LongPressDraggable<Activity>(
+                  data: activity,
+                  feedback: Material(
+                    color: Colors.transparent,
+                    elevation: 10,
+                    child: SizedBox(width: 160, height: 100, child: _buildCard(context, activity)),
+                  ),
+                  childWhenDragging: Opacity(
+                    opacity: 0.3,
+                    child: SizedBox(width: 160, height: 100, child: _buildCard(context, activity)),
+                  ),
+                  child: DragTarget<Activity>(
+                    onWillAcceptWithDetails: (details) => details.data.id != activity.id,
+                    onAcceptWithDetails: (details) {
+                      context.read<ActivityController>().moveActivity(details.data.id, activity.id);
+                    },
+                    builder: (context, candidateData, _) {
+                      final isHighlighted = candidateData.isNotEmpty;
+                      return SizedBox(
+                        width: 160,
+                        height: 100,
+                        child: _buildCard(context, activity, isHighlighted: isHighlighted),
                       );
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            activity.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          _PinnedDurationText(activityId: activity.id),
-                        ],
-                      ),
-                    ),
                   ),
                 ),
               );
@@ -77,11 +73,45 @@ class PinnedActivityList extends StatelessWidget {
       ],
     );
   }
+
+  Widget _buildCard(BuildContext context, Activity activity, {bool isHighlighted = false}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: isHighlighted ? colorScheme.primaryContainer : Theme.of(context).cardTheme.color,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ActivityDetailPage(activityId: activity.id)));
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: isHighlighted ? Border.all(color: colorScheme.primary, width: 2) : null,
+          ),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                activity.name,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              _PinnedDurationText(activityId: activity.id),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _PinnedDurationText extends StatelessWidget {
   final String activityId;
-
   const _PinnedDurationText({required this.activityId});
 
   @override
@@ -89,7 +119,6 @@ class _PinnedDurationText extends StatelessWidget {
     final durationInSeconds = context.select<ActivityController, int>(
       (controller) => controller.getEffectiveSeconds(activityId),
     );
-
     return Text(
       _formatDuration(durationInSeconds),
       style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -100,7 +129,6 @@ class _PinnedDurationText extends StatelessWidget {
     final hours = totalSeconds ~/ 3600;
     final minutes = (totalSeconds % 3600) ~/ 60;
     final seconds = totalSeconds % 60;
-
     if (hours > 0) {
       return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }

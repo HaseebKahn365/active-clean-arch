@@ -38,20 +38,41 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
     super.dispose();
   }
 
-  void _onTapDown(TapDownDetails details) {
-    _controller.reverse();
-  }
-
-  void _onTapUp(TapUpDetails details) {
-    _controller.forward();
-  }
-
-  void _onTapCancel() {
-    _controller.forward();
-  }
+  void _onTapDown(TapDownDetails details) => _controller.reverse();
+  void _onTapUp(TapUpDetails details) => _controller.forward();
+  void _onTapCancel() => _controller.forward();
 
   @override
   Widget build(BuildContext context) {
+    return LongPressDraggable<Activity>(
+      data: widget.activity,
+      // The feedback widget shown while dragging
+      feedback: Material(
+        color: Colors.transparent,
+        elevation: 10,
+        child: SizedBox(width: MediaQuery.of(context).size.width * 0.9, child: _buildBody(context)),
+      ),
+      // The widget at the original position while dragging
+      childWhenDragging: Opacity(opacity: 0.3, child: _buildBody(context, dragging: true)),
+      child: DragTarget<Activity>(
+        onWillAcceptWithDetails: (details) {
+          final draggedActivity = details.data;
+          // Cannot drop onto itself or its current parent (no-op) or its own children (cycle)
+          return draggedActivity.id != widget.activity.id;
+        },
+        onAcceptWithDetails: (details) {
+          final draggedActivity = details.data;
+          context.read<ActivityController>().moveActivity(draggedActivity.id, widget.activity.id);
+        },
+        builder: (context, candidateData, rejectedData) {
+          final isHighlighted = candidateData.isNotEmpty;
+          return _buildBody(context, isHighlighted: isHighlighted);
+        },
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, {bool isHighlighted = false, bool dragging = false}) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ScaleTransition(
@@ -59,26 +80,30 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
+          color: isHighlighted ? colorScheme.primaryContainer : Theme.of(context).cardTheme.color,
           borderRadius: BorderRadius.circular(24),
-          border: Theme.of(context).cardTheme.shape is RoundedRectangleBorder
-              ? Border.fromBorderSide((Theme.of(context).cardTheme.shape as RoundedRectangleBorder).side)
-              : null,
-          boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 20, offset: const Offset(0, 10))],
+          border: isHighlighted
+              ? Border.all(color: colorScheme.primary, width: 2)
+              : (Theme.of(context).cardTheme.shape is RoundedRectangleBorder
+                    ? Border.fromBorderSide((Theme.of(context).cardTheme.shape as RoundedRectangleBorder).side)
+                    : null),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10)),
+          ],
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
-          onTapDown: _onTapDown,
-          onTapUp: _onTapUp,
-          onTapCancel: _onTapCancel,
-          onTap:
-              widget.onTap ??
-              () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => ActivityDetailPage(activityId: widget.activity.id)),
-                );
-              },
+          onTapDown: dragging ? null : _onTapDown,
+          onTapUp: dragging ? null : _onTapUp,
+          onTapCancel: dragging ? null : _onTapCancel,
+          onTap: dragging || widget.onTap != null
+              ? widget.onTap
+              : () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ActivityDetailPage(activityId: widget.activity.id)),
+                  );
+                },
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -88,7 +113,7 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(context).withAlpha(30),
+                        color: _getStatusColor(context).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Icon(_getStatusIcon(), color: _getStatusColor(context), size: 24),
@@ -107,9 +132,7 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                         ],
                       ),
                     ),
-                    _buildActions(context),
-                    const SizedBox(width: 8),
-                    _buildMoreMenu(context),
+                    if (!dragging) ...[_buildActions(context), const SizedBox(width: 8), _buildMoreMenu(context)],
                   ],
                 ),
               ],
@@ -121,9 +144,8 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
   }
 
   Widget _buildMoreMenu(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     return IconButton(
-      icon: Icon(Icons.more_vert, color: colorScheme.onSurfaceVariant),
+      icon: Icon(Icons.more_vert, color: Theme.of(context).colorScheme.onSurfaceVariant),
       onPressed: () {
         showModalBottomSheet(
           context: context,
@@ -222,7 +244,6 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
 
 class _DurationText extends StatelessWidget {
   final String activityId;
-
   const _DurationText({required this.activityId});
 
   @override
@@ -230,7 +251,6 @@ class _DurationText extends StatelessWidget {
     final durationInSeconds = context.select<ActivityController, int>(
       (controller) => controller.getEffectiveSeconds(activityId),
     );
-
     return Text(
       _formatDuration(durationInSeconds),
       style: TextStyle(
@@ -246,7 +266,6 @@ class _DurationText extends StatelessWidget {
     final hours = totalSeconds ~/ 3600;
     final minutes = (totalSeconds % 3600) ~/ 60;
     final seconds = totalSeconds % 60;
-
     if (hours > 0) {
       return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }
@@ -258,7 +277,6 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
-
   const _ActionButton({required this.icon, required this.color, required this.onTap});
 
   @override
@@ -268,7 +286,7 @@ class _ActionButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: color.withAlpha(20), borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
         child: Icon(icon, color: color, size: 20),
       ),
     );
