@@ -12,6 +12,7 @@ class Activity extends Equatable {
   final ActivityStatus status;
   final DateTime? startedAt;
   final int totalSeconds;
+  final int goalSeconds;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +26,7 @@ class Activity extends Equatable {
     required this.status,
     this.startedAt,
     required this.totalSeconds,
+    this.goalSeconds = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -38,6 +40,7 @@ class Activity extends Equatable {
     ActivityStatus? status,
     DateTime? Function()? startedAt,
     int? totalSeconds,
+    int? goalSeconds,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -51,6 +54,7 @@ class Activity extends Equatable {
       status: status ?? this.status,
       startedAt: startedAt != null ? startedAt() : this.startedAt,
       totalSeconds: totalSeconds ?? this.totalSeconds,
+      goalSeconds: goalSeconds ?? this.goalSeconds,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -67,6 +71,7 @@ class Activity extends Equatable {
     status,
     startedAt,
     totalSeconds,
+    goalSeconds,
     createdAt,
     updatedAt,
   ];

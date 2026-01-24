@@ -123,12 +123,44 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            widget.activity.name,
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.activity.name,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                              if (widget.activity.childrenIds.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${widget.activity.childrenIds.length}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: 4),
-                          _DurationText(activityId: widget.activity.id),
+                          Row(
+                            children: [
+                              _DurationText(activityId: widget.activity.id),
+                              const SizedBox(width: 8),
+                              _CumulativeDurationText(activityId: widget.activity.id),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -239,6 +271,42 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
       default:
         return Icons.radio_button_unchecked_rounded;
     }
+  }
+}
+
+class _CumulativeDurationText extends StatelessWidget {
+  final String activityId;
+  const _CumulativeDurationText({required this.activityId});
+
+  @override
+  Widget build(BuildContext context) {
+    final totalSeconds = context.select<ActivityController, int>(
+      (controller) => controller.getCumulativeSeconds(activityId),
+    );
+
+    // If there are no children, cumulative duration is same as duration, so we don't show it separately.
+    final activity = context.select<ActivityController, Activity?>((c) => c.activitiesMap[activityId]);
+    if (activity == null || activity.childrenIds.isEmpty) return const SizedBox.shrink();
+
+    return Text(
+      '• Total: ${_formatDuration(totalSeconds)}',
+      style: TextStyle(
+        fontSize: 14,
+        fontFamily: 'monospace',
+        fontWeight: FontWeight.w400,
+        color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+      ),
+    );
+  }
+
+  String _formatDuration(int totalSeconds) {
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes}m ${seconds}s';
+    }
+    return '${minutes}m ${seconds}s';
   }
 }
 

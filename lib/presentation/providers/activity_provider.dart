@@ -12,6 +12,8 @@ import '../../domain/use_cases/activity/get_breadcrumbs_use_case.dart';
 import '../../domain/use_cases/activity/update_activity_use_case.dart';
 import '../../domain/use_cases/activity/toggle_pin_use_case.dart';
 import '../../domain/use_cases/activity/move_activity_use_case.dart';
+import '../../domain/use_cases/activity/calculate_cumulative_duration_use_case.dart';
+import '../../domain/use_cases/activity/update_activity_duration_use_case.dart';
 
 class ActivityController extends ChangeNotifier {
   final GetActivitiesUseCase getActivitiesUseCase;
@@ -25,6 +27,8 @@ class ActivityController extends ChangeNotifier {
   final UpdateActivityUseCase updateActivityUseCase;
   final TogglePinUseCase togglePinUseCase;
   final MoveActivityUseCase moveActivityUseCase;
+  final CalculateCumulativeDurationUseCase calculateCumulativeDurationUseCase;
+  final UpdateActivityDurationUseCase updateActivityDurationUseCase;
 
   ActivityController({
     required this.getActivitiesUseCase,
@@ -38,6 +42,8 @@ class ActivityController extends ChangeNotifier {
     required this.updateActivityUseCase,
     required this.togglePinUseCase,
     required this.moveActivityUseCase,
+    required this.calculateCumulativeDurationUseCase,
+    required this.updateActivityDurationUseCase,
   });
 
   Map<String, Activity> _activitiesMap = {};
@@ -114,6 +120,11 @@ class ActivityController extends ChangeNotifier {
     return activity.totalSeconds;
   }
 
+  /// Calculates the recursive duration for an activity tree.
+  int getCumulativeSeconds(String activityId) {
+    return calculateCumulativeDurationUseCase.execute(activityId, _activitiesMap, getEffectiveSeconds);
+  }
+
   // Activity Actions
   Future<void> startActivity(String id) async {
     await startActivityUseCase.execute(id);
@@ -130,8 +141,13 @@ class ActivityController extends ChangeNotifier {
     await loadActivities();
   }
 
-  Future<void> createActivity(String name, {String? parentId, String? description}) async {
-    await createActivityUseCase.execute(name, parentId: parentId, description: description ?? '');
+  Future<void> createActivity(String name, {String? parentId, String? description, int goalSeconds = 0}) async {
+    await createActivityUseCase.execute(
+      name,
+      parentId: parentId,
+      description: description ?? '',
+      goalSeconds: goalSeconds,
+    );
     await loadActivities();
   }
 
@@ -140,8 +156,8 @@ class ActivityController extends ChangeNotifier {
     await loadActivities();
   }
 
-  Future<void> updateActivity(String id, {String? name, String? description}) async {
-    await updateActivityUseCase.execute(id, name: name, description: description);
+  Future<void> updateActivity(String id, {String? name, String? description, int? goalSeconds}) async {
+    await updateActivityUseCase.execute(id, name: name, description: description, goalSeconds: goalSeconds);
     await loadActivities();
   }
 
@@ -152,6 +168,11 @@ class ActivityController extends ChangeNotifier {
 
   Future<void> moveActivity(String activityId, String? newParentId) async {
     await moveActivityUseCase.execute(activityId, newParentId);
+    await loadActivities();
+  }
+
+  Future<void> updateActivityDuration(String id, int newSeconds) async {
+    await updateActivityDurationUseCase.execute(id, newSeconds);
     await loadActivities();
   }
 

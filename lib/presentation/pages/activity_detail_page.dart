@@ -1,9 +1,9 @@
-import 'package:active/presentation/pages/add_activity_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/activity.dart';
 import '../providers/activity_provider.dart';
 import './dashboard/widgets/activity_tile.dart';
+import './dashboard/widgets/create_activity_sheet.dart';
 
 class ActivityDetailPage extends StatefulWidget {
   final String activityId;
@@ -114,9 +114,12 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => AddActivityPage(parentId: _currentActivityId)),
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: colorScheme.surface,
+              shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+              builder: (context) => CreateActivitySheet(parentId: _currentActivityId),
             );
           },
           backgroundColor: colorScheme.primary,

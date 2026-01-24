@@ -60,6 +60,11 @@ class ActivityRepositoryImpl implements ActivityRepository {
       durationDelta: event.durationDelta,
       previousStatus: event.previousStatus,
       nextStatus: event.nextStatus,
+      oldParentId: event.oldParentId,
+      newParentId: event.newParentId,
+      oldDuration: event.oldDuration,
+      newDuration: event.newDuration,
+      isSynced: event.isSynced,
     );
     await db.insert('activity_events', model.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }

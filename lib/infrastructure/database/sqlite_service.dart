@@ -30,6 +30,7 @@ class SqliteService {
         status TEXT NOT NULL,
         started_at TEXT,
         total_seconds INTEGER NOT NULL,
+        goal_seconds INTEGER NOT NULL DEFAULT 0,
         is_pinned INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -44,6 +45,8 @@ class SqliteService {
         next_status TEXT NOT NULL,
         old_parent_id TEXT,
         new_parent_id TEXT,
+        old_duration INTEGER,
+        new_duration INTEGER,
         is_synced INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE
       );

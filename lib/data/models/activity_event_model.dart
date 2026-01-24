@@ -11,6 +11,8 @@ class ActivityEventModel extends ActivityEvent {
     required super.nextStatus,
     super.oldParentId,
     super.newParentId,
+    super.oldDuration,
+    super.newDuration,
     super.isSynced,
   });
 
@@ -24,6 +26,8 @@ class ActivityEventModel extends ActivityEvent {
       nextStatus: ActivityStatus.values.firstWhere((e) => e.toString() == (map['next_status'] as String)),
       oldParentId: map['old_parent_id'] as String?,
       newParentId: map['new_parent_id'] as String?,
+      oldDuration: map['old_duration'] as int?,
+      newDuration: map['new_duration'] as int?,
       isSynced: (map['is_synced'] as int) == 1,
     );
   }
@@ -38,6 +42,8 @@ class ActivityEventModel extends ActivityEvent {
       'next_status': nextStatus.toString(),
       'old_parent_id': oldParentId,
       'new_parent_id': newParentId,
+      'old_duration': oldDuration,
+      'new_duration': newDuration,
       'is_synced': isSynced ? 1 : 0,
     };
   }
