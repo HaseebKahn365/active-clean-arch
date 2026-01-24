@@ -8,6 +8,8 @@ import '../../domain/use_cases/activity/pause_activity_use_case.dart';
 import '../../domain/use_cases/activity/complete_activity_use_case.dart';
 import '../../domain/use_cases/activity/checkpoint_activity_use_case.dart';
 import '../../domain/use_cases/activity/create_activity_use_case.dart';
+import '../../domain/use_cases/activity/get_breadcrumbs_use_case.dart';
+import '../../domain/use_cases/activity/update_activity_use_case.dart';
 
 class ActivityController extends ChangeNotifier {
   final GetActivitiesUseCase getActivitiesUseCase;
@@ -17,6 +19,8 @@ class ActivityController extends ChangeNotifier {
   final CompleteActivityUseCase completeActivityUseCase;
   final CheckpointActivityUseCase checkpointActivityUseCase;
   final CreateActivityUseCase createActivityUseCase;
+  final GetBreadcrumbsUseCase getBreadcrumbsUseCase;
+  final UpdateActivityUseCase updateActivityUseCase;
 
   ActivityController({
     required this.getActivitiesUseCase,
@@ -26,6 +30,8 @@ class ActivityController extends ChangeNotifier {
     required this.completeActivityUseCase,
     required this.checkpointActivityUseCase,
     required this.createActivityUseCase,
+    required this.getBreadcrumbsUseCase,
+    required this.updateActivityUseCase,
   });
 
   Map<String, Activity> _activitiesMap = {};
@@ -114,13 +120,18 @@ class ActivityController extends ChangeNotifier {
     await loadActivities();
   }
 
-  Future<void> createActivity(String name, {String? parentId}) async {
-    await createActivityUseCase.execute(name, parentId: parentId);
+  Future<void> createActivity(String name, {String? parentId, String? description}) async {
+    await createActivityUseCase.execute(name, parentId: parentId, description: description ?? '');
     await loadActivities();
   }
 
   Future<void> deleteActivity(String id) async {
     await deleteActivityUseCase.execute(id);
+    await loadActivities();
+  }
+
+  Future<void> updateActivity(String id, {String? name, String? description}) async {
+    await updateActivityUseCase.execute(id, name: name, description: description);
     await loadActivities();
   }
 
@@ -133,5 +144,9 @@ class ActivityController extends ChangeNotifier {
   /// Returns children of a specific activity.
   List<Activity> getChildrenOf(String parentId) {
     return _activitiesMap.values.where((a) => a.parentId == parentId).toList();
+  }
+
+  Future<List<Activity>> getBreadcrumbs(String activityId) {
+    return getBreadcrumbsUseCase.execute(activityId);
   }
 }

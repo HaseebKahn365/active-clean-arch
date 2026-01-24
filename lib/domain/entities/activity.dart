@@ -5,6 +5,7 @@ enum ActivityStatus { idle, running, paused, completed }
 class Activity extends Equatable {
   final String id;
   final String name;
+  final String description;
   final String? parentId;
   final List<String> childrenIds;
   final ActivityStatus status;
@@ -16,6 +17,7 @@ class Activity extends Equatable {
   const Activity({
     required this.id,
     required this.name,
+    this.description = '',
     this.parentId,
     required this.childrenIds,
     required this.status,
@@ -27,6 +29,7 @@ class Activity extends Equatable {
 
   Activity copyWith({
     String? name,
+    String? description,
     String? Function()? parentId,
     List<String>? childrenIds,
     ActivityStatus? status,
@@ -38,6 +41,7 @@ class Activity extends Equatable {
     return Activity(
       id: id,
       name: name ?? this.name,
+      description: description ?? this.description,
       parentId: parentId != null ? parentId() : this.parentId,
       childrenIds: childrenIds ?? this.childrenIds,
       status: status ?? this.status,
@@ -49,5 +53,16 @@ class Activity extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, parentId, childrenIds, status, startedAt, totalSeconds, createdAt, updatedAt];
+  List<Object?> get props => [
+    id,
+    name,
+    description,
+    parentId,
+    childrenIds,
+    status,
+    startedAt,
+    totalSeconds,
+    createdAt,
+    updatedAt,
+  ];
 }

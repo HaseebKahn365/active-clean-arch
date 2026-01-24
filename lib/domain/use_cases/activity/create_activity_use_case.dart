@@ -7,10 +7,26 @@ class CreateActivityUseCase {
 
   CreateActivityUseCase(this.repository);
 
-  Future<void> execute(String name, {String? parentId}) async {
+  Future<void> execute(String name, {String? parentId, String description = ''}) async {
+    final newActivityId = const Uuid().v4();
+
+    // 1. If there's a parent, update it first
+    if (parentId != null) {
+      final parent = await repository.getActivityById(parentId);
+      if (parent != null) {
+        final updatedParent = parent.copyWith(
+          childrenIds: [...parent.childrenIds, newActivityId],
+          updatedAt: DateTime.now(),
+        );
+        await repository.saveActivity(updatedParent);
+      }
+    }
+
+    // 2. Create and save the new activity
     final activity = Activity(
-      id: const Uuid().v4(),
+      id: newActivityId,
       name: name,
+      description: description,
       status: ActivityStatus.idle,
       totalSeconds: 0,
       parentId: parentId,

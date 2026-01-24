@@ -29,7 +29,6 @@ class _CreateActivitySheetState extends State<CreateActivitySheet> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, left: 24, right: 24, top: 32),
@@ -55,7 +54,7 @@ class _CreateActivitySheetState extends State<CreateActivitySheet> {
               decoration: InputDecoration(
                 hintText: 'e.g. Reading, Deep Work, Workout',
                 filled: true,
-                fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
+                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               ),
