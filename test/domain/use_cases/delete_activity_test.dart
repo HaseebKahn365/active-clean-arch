@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:active/domain/entities/activity.dart';
 import 'package:active/domain/entities/activity_event.dart';
+import 'package:active/domain/entities/count_record.dart';
 import 'package:active/domain/repositories/activity_repository.dart';
 import 'package:active/domain/use_cases/activity/delete_activity_use_case.dart';
 import 'package:active/domain/use_cases/activity/pause_activity_use_case.dart';
@@ -47,6 +48,15 @@ class MockActivityRepository implements ActivityRepository {
       // Note: ActivityEvent is immutable
     }
   }
+
+  @override
+  Future<void> saveCountRecord(CountRecord record) async {}
+
+  @override
+  Future<List<CountRecord>> getCountRecordsForActivity(String activityId) async => [];
+
+  @override
+  Future<void> deleteCountRecord(String id) async {}
 }
 
 void main() {
@@ -68,6 +78,7 @@ void main() {
       childrenIds: const ['parent'],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      type: ActivityType.timeBased,
       createdAt: now,
       updatedAt: now,
     );
@@ -78,6 +89,7 @@ void main() {
       childrenIds: const ['child1', 'child2'],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      type: ActivityType.timeBased,
       createdAt: now,
       updatedAt: now,
     );
@@ -88,6 +100,7 @@ void main() {
       childrenIds: const [],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      type: ActivityType.timeBased,
       createdAt: now,
       updatedAt: now,
     );
@@ -98,6 +111,7 @@ void main() {
       childrenIds: const [],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      type: ActivityType.timeBased,
       createdAt: now,
       updatedAt: now,
     );
@@ -134,6 +148,7 @@ void main() {
       childrenIds: const ['child1'],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      type: ActivityType.timeBased,
       createdAt: now,
       updatedAt: now,
     );
@@ -144,6 +159,7 @@ void main() {
       childrenIds: const [],
       status: ActivityStatus.paused,
       totalSeconds: 0,
+      type: ActivityType.timeBased,
       createdAt: now,
       updatedAt: now,
     );

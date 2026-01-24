@@ -1,10 +1,12 @@
 import '../../domain/entities/activity.dart';
 import '../../domain/entities/activity_event.dart';
+import '../../domain/entities/count_record.dart';
 import '../../domain/repositories/activity_repository.dart';
 
 class InMemoryActivityRepository implements ActivityRepository {
   final Map<String, Activity> _activities = {};
   final List<ActivityEvent> _events = [];
+  final List<CountRecord> _countRecords = [];
 
   @override
   Future<List<Activity>> getAllActivities() async {
@@ -48,5 +50,20 @@ class InMemoryActivityRepository implements ActivityRepository {
   @override
   Future<void> markEventAsSynced(String id) async {
     // No-op for in-memory
+  }
+
+  @override
+  Future<void> saveCountRecord(CountRecord record) async {
+    _countRecords.add(record);
+  }
+
+  @override
+  Future<List<CountRecord>> getCountRecordsForActivity(String activityId) async {
+    return _countRecords.where((r) => r.activityId == activityId).toList();
+  }
+
+  @override
+  Future<void> deleteCountRecord(String id) async {
+    _countRecords.removeWhere((r) => r.id == id);
   }
 }

@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 
 enum ActivityStatus { idle, running, paused, completed }
 
+enum ActivityType { timeBased, countBased }
+
 class Activity extends Equatable {
   final String id;
   final String name;
@@ -13,6 +15,7 @@ class Activity extends Equatable {
   final DateTime? startedAt;
   final int totalSeconds;
   final int goalSeconds;
+  final ActivityType type;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -27,6 +30,7 @@ class Activity extends Equatable {
     this.startedAt,
     required this.totalSeconds,
     this.goalSeconds = 0,
+    this.type = ActivityType.timeBased,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -41,6 +45,7 @@ class Activity extends Equatable {
     DateTime? Function()? startedAt,
     int? totalSeconds,
     int? goalSeconds,
+    ActivityType? type,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -55,6 +60,7 @@ class Activity extends Equatable {
       startedAt: startedAt != null ? startedAt() : this.startedAt,
       totalSeconds: totalSeconds ?? this.totalSeconds,
       goalSeconds: goalSeconds ?? this.goalSeconds,
+      type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -72,6 +78,7 @@ class Activity extends Equatable {
     startedAt,
     totalSeconds,
     goalSeconds,
+    type,
     createdAt,
     updatedAt,
   ];

@@ -14,6 +14,8 @@ import '../../domain/use_cases/activity/toggle_pin_use_case.dart';
 import '../../domain/use_cases/activity/move_activity_use_case.dart';
 import '../../domain/use_cases/activity/calculate_cumulative_duration_use_case.dart';
 import '../../domain/use_cases/activity/update_activity_duration_use_case.dart';
+import '../../domain/use_cases/activity/add_count_use_case.dart';
+import '../../domain/use_cases/activity/get_activity_total_use_case.dart';
 
 class ActivityController extends ChangeNotifier {
   final GetActivitiesUseCase getActivitiesUseCase;
@@ -29,6 +31,8 @@ class ActivityController extends ChangeNotifier {
   final MoveActivityUseCase moveActivityUseCase;
   final CalculateCumulativeDurationUseCase calculateCumulativeDurationUseCase;
   final UpdateActivityDurationUseCase updateActivityDurationUseCase;
+  final AddCountUseCase addCountUseCase;
+  final GetActivityTotalUseCase getActivityTotalUseCase;
 
   ActivityController({
     required this.getActivitiesUseCase,
@@ -44,12 +48,15 @@ class ActivityController extends ChangeNotifier {
     required this.moveActivityUseCase,
     required this.calculateCumulativeDurationUseCase,
     required this.updateActivityDurationUseCase,
+    required this.addCountUseCase,
+    required this.getActivityTotalUseCase,
   });
 
   Map<String, Activity> _activitiesMap = {};
   bool _isLoading = false;
   StreamSubscription? _tickSubscription;
   int _tickCount = 0;
+  final Map<String, double> _countsTotalCache = {};
 
   bool get isLoading => _isLoading;
 
@@ -75,9 +82,23 @@ class ActivityController extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error loading activities: $e');
     } finally {
+      await _refreshCounts();
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _refreshCounts() async {
+    for (final activity in _activitiesMap.values) {
+      if (activity.type == ActivityType.countBased) {
+        final total = await getActivityTotalUseCase.execute(activity.id);
+        _countsTotalCache[activity.id] = total;
+      }
+    }
+  }
+
+  double getCountTotalFor(String activityId) {
+    return _countsTotalCache[activityId] ?? 0.0;
   }
 
   void _startTick() {
@@ -141,12 +162,19 @@ class ActivityController extends ChangeNotifier {
     await loadActivities();
   }
 
-  Future<void> createActivity(String name, {String? parentId, String? description, int goalSeconds = 0}) async {
+  Future<void> createActivity(
+    String name, {
+    String? parentId,
+    String? description,
+    int goalSeconds = 0,
+    ActivityType type = ActivityType.timeBased,
+  }) async {
     await createActivityUseCase.execute(
       name,
       parentId: parentId,
       description: description ?? '',
       goalSeconds: goalSeconds,
+      type: type,
     );
     await loadActivities();
   }
@@ -173,6 +201,11 @@ class ActivityController extends ChangeNotifier {
 
   Future<void> updateActivityDuration(String id, int newSeconds) async {
     await updateActivityDurationUseCase.execute(id, newSeconds);
+    await loadActivities();
+  }
+
+  Future<void> addCount(String id, double value) async {
+    await addCountUseCase.execute(id, value);
     await loadActivities();
   }
 

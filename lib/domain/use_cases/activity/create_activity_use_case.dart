@@ -7,7 +7,13 @@ class CreateActivityUseCase {
 
   CreateActivityUseCase(this.repository);
 
-  Future<void> execute(String name, {String? parentId, String description = '', int goalSeconds = 0}) async {
+  Future<void> execute(
+    String name, {
+    String? parentId,
+    String description = '',
+    int goalSeconds = 0,
+    ActivityType type = ActivityType.timeBased,
+  }) async {
     final newActivityId = const Uuid().v4();
 
     // 1. If there's a parent, update it first
@@ -30,6 +36,7 @@ class CreateActivityUseCase {
       status: ActivityStatus.idle,
       totalSeconds: 0,
       goalSeconds: goalSeconds,
+      type: type,
       parentId: parentId,
       childrenIds: const [],
       createdAt: DateTime.now(),

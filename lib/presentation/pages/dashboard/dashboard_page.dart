@@ -29,11 +29,12 @@ class DashboardPage extends StatelessWidget {
                   _buildStatsRow(context),
                   const SizedBox(height: 32),
                   const PinnedActivityList(),
+                  const SizedBox(height: 24),
                   Text(
                     'Current Activities',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   const ActivityList(),
                 ],
               ),

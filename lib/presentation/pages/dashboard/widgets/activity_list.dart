@@ -42,6 +42,7 @@ class ActivityList extends StatelessWidget {
                 border: isHighlighted ? Border.all(color: Theme.of(context).colorScheme.primary) : null,
               ),
               child: ListView.builder(
+                padding: EdgeInsets.zero,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: roots.length,

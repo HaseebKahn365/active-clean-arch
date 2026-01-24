@@ -1,6 +1,7 @@
 import 'package:duration_picker/duration_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../domain/entities/activity.dart';
 import '../../../providers/activity_provider.dart';
 
 class CreateActivitySheet extends StatefulWidget {
@@ -17,6 +18,7 @@ class _CreateActivitySheetState extends State<CreateActivitySheet> {
   final _expectedDurationController = TextEditingController(text: '00:00:00');
   final _formKey = GlobalKey<FormState>();
   int _goalSeconds = 0;
+  ActivityType _type = ActivityType.timeBased;
 
   @override
   void dispose() {
@@ -55,6 +57,7 @@ class _CreateActivitySheetState extends State<CreateActivitySheet> {
         parentId: widget.parentId,
         description: _descriptionController.text.trim(),
         goalSeconds: _goalSeconds,
+        type: _type,
       );
       Navigator.pop(context);
     }
@@ -82,6 +85,27 @@ class _CreateActivitySheetState extends State<CreateActivitySheet> {
               Text(
                 'Define your activity details and set an optional goal.',
                 style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 24),
+              SegmentedButton<ActivityType>(
+                segments: const [
+                  ButtonSegment(
+                    value: ActivityType.timeBased,
+                    label: Text('Time-Based'),
+                    icon: Icon(Icons.timer_outlined),
+                  ),
+                  ButtonSegment(
+                    value: ActivityType.countBased,
+                    label: Text('Count-Based'),
+                    icon: Icon(Icons.numbers_outlined),
+                  ),
+                ],
+                selected: {_type},
+                onSelectionChanged: (val) {
+                  setState(() {
+                    _type = val.first;
+                  });
+                },
               ),
               const SizedBox(height: 24),
               TextFormField(
@@ -112,22 +136,27 @@ class _CreateActivitySheetState extends State<CreateActivitySheet> {
                 maxLines: 2,
                 style: TextStyle(color: colorScheme.onSurface),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _expectedDurationController,
-                readOnly: true,
-                onTap: _showDurationPicker,
-                decoration: InputDecoration(
-                  labelText: 'Expected Duration',
-                  hintText: 'Set a goal time',
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                  prefixIcon: const Icon(Icons.timer_outlined),
-                  suffixIcon: IconButton(icon: const Icon(Icons.watch_later_outlined), onPressed: _showDurationPicker),
+              if (_type == ActivityType.timeBased) ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _expectedDurationController,
+                  readOnly: true,
+                  onTap: _showDurationPicker,
+                  decoration: InputDecoration(
+                    labelText: 'Expected Duration',
+                    hintText: 'Set a goal time',
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    prefixIcon: const Icon(Icons.timer_outlined),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.watch_later_outlined),
+                      onPressed: _showDurationPicker,
+                    ),
+                  ),
+                  style: TextStyle(color: colorScheme.onSurface),
                 ),
-                style: TextStyle(color: colorScheme.onSurface),
-              ),
+              ],
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: _submit,

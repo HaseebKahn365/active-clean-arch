@@ -210,7 +210,28 @@ class _ActivityDetailsSheetState extends State<ActivityDetailsSheet> {
                               builder: (context, name, _) {
                                 return Row(
                                   children: [
-                                    Expanded(child: Text(name, style: titleLarge)),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(name, style: titleLarge),
+                                          Text(
+                                            widget.activity.type == ActivityType.timeBased
+                                                ? "Type: Time-Based"
+                                                : "Type: Count-Based",
+                                            style: bodySmall,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      widget.activity.type == ActivityType.timeBased
+                                          ? Icons.timer_outlined
+                                          : Icons.numbers_rounded,
+                                      size: 20,
+                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                    ),
+                                    const SizedBox(width: 8),
                                     Selector<ActivityController, bool>(
                                       selector: (_, ctrl) =>
                                           ctrl.activitiesMap[widget.activity.id]?.isPinned ?? widget.activity.isPinned,

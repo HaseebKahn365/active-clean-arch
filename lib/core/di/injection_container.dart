@@ -21,6 +21,8 @@ import '../../domain/use_cases/activity/toggle_pin_use_case.dart';
 import '../../domain/use_cases/activity/move_activity_use_case.dart';
 import '../../domain/use_cases/activity/calculate_cumulative_duration_use_case.dart';
 import '../../domain/use_cases/activity/update_activity_duration_use_case.dart';
+import '../../domain/use_cases/activity/add_count_use_case.dart';
+import '../../domain/use_cases/activity/get_activity_total_use_case.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../presentation/providers/activity_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
@@ -59,6 +61,8 @@ Future<void> init() async {
       moveActivityUseCase: sl(),
       calculateCumulativeDurationUseCase: sl(),
       updateActivityDurationUseCase: sl(),
+      addCountUseCase: sl(),
+      getActivityTotalUseCase: sl(),
     ),
   );
   sl.registerFactory(() => SyncController(activityRepository: sl(), syncRepository: sl(), connectivity: sl()));
@@ -78,6 +82,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => MoveActivityUseCase(sl()));
   sl.registerLazySingleton(() => CalculateCumulativeDurationUseCase());
   sl.registerLazySingleton(() => UpdateActivityDurationUseCase(sl()));
+  sl.registerLazySingleton(() => AddCountUseCase(sl()));
+  sl.registerLazySingleton(() => GetActivityTotalUseCase(sl()));
 
   // Repository
   sl.registerLazySingleton<ActivityRepository>(() => InMemoryActivityRepository());

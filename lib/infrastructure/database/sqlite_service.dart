@@ -31,9 +31,18 @@ class SqliteService {
         started_at TEXT,
         total_seconds INTEGER NOT NULL,
         goal_seconds INTEGER NOT NULL DEFAULT 0,
+        type TEXT NOT NULL DEFAULT 'ActivityType.timeBased',
         is_pinned INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE count_records (
+        id TEXT PRIMARY KEY,
+        activity_id TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        value REAL NOT NULL,
+        FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE
       );
 
       CREATE TABLE activity_events (
