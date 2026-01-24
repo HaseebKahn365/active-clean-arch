@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../domain/entities/activity.dart';
 import '../../../providers/activity_manager_provider.dart';
+import '../../stats/activity_stats_page.dart';
 
 class ActivityTile extends StatefulWidget {
   final Activity activity;
@@ -181,6 +182,15 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                               ),
                             ),
                           ],
+                          IconButton(
+                            icon: Icon(Icons.bar_chart_rounded, color: colorScheme.primary, size: 20),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => ActivityStatsPage(activityId: widget.activity.id)),
+                              );
+                            },
+                          ),
                           _buildMoreMenu(context),
                         ],
                       ),
@@ -276,6 +286,8 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
       );
       actions.add(const SizedBox(width: 8));
     }
+
+    actions.add(const SizedBox(width: 8));
 
     actions.add(
       _ActionButton(

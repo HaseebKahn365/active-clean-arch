@@ -35,6 +35,7 @@ import '../../presentation/providers/activity_manager_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
 import '../../presentation/providers/sync_provider.dart';
 import '../../presentation/providers/theme_provider.dart';
+import '../../presentation/providers/stats_provider.dart';
 import '../../application/services/activity_timer_service.dart';
 
 final sl = GetIt.instance;
@@ -57,8 +58,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => ActivityTimerService());
 
   // Presentation / State Management
-  sl.registerFactory(() => AppAuthProvider(sl()));
-  sl.registerFactory(
+  sl.registerLazySingleton(() => AppAuthProvider(sl()));
+  sl.registerLazySingleton(
     () => ActivityController(
       getActivitiesUseCase: sl(),
       deleteActivityUseCase: sl(),
@@ -78,8 +79,8 @@ Future<void> init() async {
       timerService: sl(),
     ),
   );
-  sl.registerFactory(() => SyncController(activityRepository: sl(), syncRepository: sl(), connectivity: sl()));
-  sl.registerFactory(
+  sl.registerLazySingleton(() => SyncController(activityRepository: sl(), syncRepository: sl(), connectivity: sl()));
+  sl.registerLazySingleton(
     () => BackupController(
       createBackupUseCase: sl(),
       getBackupHistoryUseCase: sl(),
@@ -88,6 +89,7 @@ Future<void> init() async {
     ),
   );
   sl.registerLazySingleton(() => ThemeProvider(sl()));
+  sl.registerLazySingleton(() => StatsController(repository: sl(), activityController: sl()));
 
   // Use Cases
   sl.registerLazySingleton(() => GetActivitiesUseCase(sl()));

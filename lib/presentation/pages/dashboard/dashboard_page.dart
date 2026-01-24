@@ -78,8 +78,13 @@ class DashboardPage extends StatelessWidget {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupPage()));
           },
         ),
+        IconButton(
+          icon: Icon(Icons.bar_chart_rounded, color: colorScheme.onPrimary),
+          onPressed: () => Navigator.pushNamed(context, '/stats/global'),
+        ),
         _buildThemeSelector(context),
       ],
+
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(

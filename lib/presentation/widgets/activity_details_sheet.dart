@@ -380,6 +380,23 @@ class _ActivityDetailsSheetState extends State<ActivityDetailsSheet> {
                       ),
 
                       const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.pushNamed(context, '/stats/activity/${widget.activity.id}');
+                          },
+                          icon: const Icon(Icons.analytics_outlined),
+                          label: const Text('View Advanced Stats'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
                       // Created At Label
                       InkWell(
                         onTap: () => setState(() => _showTimeAgo = !_showTimeAgo),

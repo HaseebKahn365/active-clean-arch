@@ -9,9 +9,13 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/sync_provider.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/backup_provider.dart';
+import 'presentation/providers/stats_provider.dart';
+
 import 'presentation/theme/app_theme.dart';
 import 'presentation/pages/auth/sign_in_page.dart';
 import 'presentation/pages/dashboard/dashboard_page.dart';
+import 'presentation/pages/stats/global_stats_page.dart';
+import 'presentation/pages/stats/activity_stats_page.dart';
 import 'presentation/widgets/mac_swipe_back_navigator.dart';
 
 Future<void> main() async {
@@ -39,6 +43,7 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider(create: (_) => di.sl<ThemeProvider>()),
         ChangeNotifierProvider(create: (_) => di.sl<BackupController>()),
+        ChangeNotifierProvider(create: (_) => di.sl<StatsController>()..loadData()),
       ],
       child: const ActiveApp(),
     ),
@@ -61,8 +66,17 @@ class ActiveApp extends StatelessWidget {
       theme: AppTheme.getTheme(themeProvider.colorProfile, Brightness.light),
       darkTheme: AppTheme.getTheme(themeProvider.colorProfile, Brightness.dark),
       themeMode: themeProvider.themeMode,
+
       builder: (context, child) => MacSwipeBackNavigator(navigatorKey: _navigatorKey, child: child!),
       home: const AuthGate(),
+      routes: {'/stats/global': (context) => const GlobalStatsPage()},
+      onGenerateRoute: (settings) {
+        if (settings.name?.startsWith('/stats/activity/') ?? false) {
+          final id = settings.name!.replaceFirst('/stats/activity/', '');
+          return MaterialPageRoute(builder: (context) => ActivityStatsPage(activityId: id));
+        }
+        return null;
+      },
     );
   }
 }

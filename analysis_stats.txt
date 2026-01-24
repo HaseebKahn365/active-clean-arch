@@ -1,0 +1,19 @@
+Analyzing active...                                             
+
+  error • The argument for the named parameter 'darkTheme' was already specified • lib/main.dart:68:7 • duplicate_named_argument
+  error • Target of URI doesn't exist: '../../domain/entities/activity.dart' • lib/presentation/pages/stats/activity_stats_page.dart:7:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../../domain/entities/activity_event.dart' • lib/presentation/pages/stats/activity_stats_page.dart:8:8 • uri_does_not_exist
+  error • Undefined class 'Activity' • lib/presentation/pages/stats/activity_stats_page.dart:63:49 • undefined_class
+  error • Undefined name 'ActivityStatus' • lib/presentation/pages/stats/activity_stats_page.dart:85:38 • undefined_identifier
+  error • Undefined name 'ActivityStatus' • lib/presentation/pages/stats/activity_stats_page.dart:91:38 • undefined_identifier
+warning • The value of the local variable 'colorScheme' isn't used • lib/presentation/pages/stats/activity_stats_page.dart:154:11 • unused_local_variable
+  error • Undefined class 'Activity' • lib/presentation/pages/stats/activity_stats_page.dart:186:77 • undefined_class
+   info • Unnecessary use of 'toList' in a spread • lib/presentation/pages/stats/activity_stats_page.dart:204:70 • unnecessary_to_list_in_spreads
+  error • Undefined class 'ActivityEvent' • lib/presentation/pages/stats/activity_stats_page.dart:209:51 • undefined_class
+  error • The getter 'medium' isn't defined for the type 'FontWeight' • lib/presentation/pages/stats/activity_stats_page.dart:267:46 • undefined_getter
+  error • Undefined class 'Activity' • lib/presentation/pages/stats/activity_stats_page.dart:280:78 • undefined_class
+warning • The value of the local variable 'trend' isn't used • lib/presentation/pages/stats/activity_stats_page.dart:282:11 • unused_local_variable
+  error • Invalid constant value • lib/presentation/pages/stats/global_stats_page.dart:146:86 • invalid_constant
+  error • The getter 'emerald' isn't defined for the type 'Colors' • lib/presentation/pages/stats/global_stats_page.dart:146:93 • undefined_getter
+   info • Unnecessary use of 'toList' in a spread • lib/presentation/pages/stats/global_stats_page.dart:357:95 • unnecessary_to_list_in_spreads
+
