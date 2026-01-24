@@ -14,18 +14,13 @@ class CreateBackupUseCase {
   CreateBackupUseCase(this.activityRepository, this.backupRepository);
 
   Future<void> execute(String userId) async {
-    print('BACKUP: Starting backup creation...');
-
     // 1. Fetch all data
     final activities = await activityRepository.getAllActivities();
     final events = await activityRepository.getAllEvents();
     final countRecords = await activityRepository.getAllCountRecords();
 
-    print(
-      'BACKUP: Fetched ${activities.length} activities, ${events.length} events, ${countRecords.length} count records.',
-    );
-
     // 2. Serialize to JSON
+
     final Map<String, dynamic> backupData = {
       'activities': activities.map((a) => ActivityModel.fromEntity(a).toMap()).toList(),
       'events': events
@@ -59,11 +54,9 @@ class CreateBackupUseCase {
 
     // 3. Upload file
     final url = await backupRepository.uploadBackup(userId, data, fileName);
-    print('BACKUP: Upload successful. URL: $url');
 
     // 4. Save metadata
     final backup = Backup(id: const Uuid().v4(), url: url, timestamp: DateTime.now(), fileName: fileName);
     await backupRepository.saveBackupMetadata(userId, backup);
-    print('BACKUP: Metadata saved successfully.');
   }
 }

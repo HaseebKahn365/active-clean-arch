@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/backup_provider.dart';
-import '../../providers/activity_provider.dart';
+import '../../providers/activity_manager_provider.dart';
 
 class BackupPage extends StatefulWidget {
   const BackupPage({super.key});

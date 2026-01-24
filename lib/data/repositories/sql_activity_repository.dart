@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../domain/entities/activity.dart';
 import '../../../domain/entities/activity_event.dart';
 import '../../../domain/repositories/activity_repository.dart';
@@ -8,10 +9,10 @@ import '../models/count_record_model.dart';
 import '../../../domain/entities/count_record.dart';
 import 'package:sqflite/sqflite.dart';
 
-class ActivityRepositoryImpl implements ActivityRepository {
+class SqlActivityRepository implements ActivityRepository {
   final SqliteService sqliteService;
 
-  ActivityRepositoryImpl(this.sqliteService);
+  SqlActivityRepository(this.sqliteService);
 
   @override
   Future<List<Activity>> getAllActivities() async {
@@ -33,7 +34,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
   }
 
   @override
-  Future<void> saveActivity(Activity activity) async {
+  Future<void> saveActivity(Activity activity, {SaveReason reason = SaveReason.immediate}) async {
+    debugPrint('SQL_SAVE: ${reason.name.toUpperCase()} | Activity: ${activity.id}');
     final db = await sqliteService.database;
     final model = ActivityModel.fromEntity(activity);
     await db.insert('activities', model.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
@@ -41,12 +43,14 @@ class ActivityRepositoryImpl implements ActivityRepository {
 
   @override
   Future<void> deleteActivity(String id) async {
+    debugPrint('SQL_SAVE: IMMEDIATE | Delete Activity: $id');
     final db = await sqliteService.database;
     await db.delete('activities', where: 'id = ?', whereArgs: [id]);
   }
 
   @override
-  Future<void> updateActivity(Activity activity) async {
+  Future<void> updateActivity(Activity activity, {SaveReason reason = SaveReason.immediate}) async {
+    debugPrint('SQL_SAVE: ${reason.name.toUpperCase()} | Activity: ${activity.id}');
     final db = await sqliteService.database;
     final model = ActivityModel.fromEntity(activity);
     await db.update('activities', model.toMap(), where: 'id = ?', whereArgs: [activity.id]);
@@ -54,6 +58,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
 
   @override
   Future<void> saveEvent(ActivityEvent event) async {
+    debugPrint('SQL_SAVE: IMMEDIATE | Event Activity: ${event.activityId}');
+
     final db = await sqliteService.database;
     final model = ActivityEventModel(
       id: event.id,
@@ -93,6 +99,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
 
   @override
   Future<void> saveCountRecord(CountRecord record) async {
+    debugPrint('SQL_SAVE: IMMEDIATE | Count Activity: ${record.activityId}');
+
     final db = await sqliteService.database;
     final model = CountRecordModel.fromEntity(record);
     await db.insert('count_records', model.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);

@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'core/di/injection_container.dart' as di;
-import 'presentation/providers/activity_provider.dart';
+import 'presentation/providers/activity_manager_provider.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/sync_provider.dart';
 import 'presentation/providers/theme_provider.dart';

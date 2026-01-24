@@ -20,7 +20,7 @@ class CheckpointActivityUseCase {
     // Checkpoint strategy: Update total_seconds but stay 'running' with a new started_at
     final updatedActivity = activity.copyWith(totalSeconds: activity.totalSeconds + deltaSeconds, startedAt: () => now);
 
-    await repository.updateActivity(updatedActivity);
+    await repository.updateActivity(updatedActivity, reason: SaveReason.periodic);
 
     // Also log an event if required by audit trail, though Step 13 says "Checkpoint"
     // to ensure zero data loss. We'll log it as a checkpoint event.

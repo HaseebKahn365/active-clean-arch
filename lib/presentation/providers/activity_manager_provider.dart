@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:active/application/services/activity_timer_service.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/activity.dart';
 import '../../domain/use_cases/activity/get_activities_use_case.dart';
@@ -34,6 +35,8 @@ class ActivityController extends ChangeNotifier {
   final AddCountUseCase addCountUseCase;
   final GetActivityTotalUseCase getActivityTotalUseCase;
 
+  final ActivityTimerService timerService;
+
   ActivityController({
     required this.getActivitiesUseCase,
     required this.deleteActivityUseCase,
@@ -50,12 +53,12 @@ class ActivityController extends ChangeNotifier {
     required this.updateActivityDurationUseCase,
     required this.addCountUseCase,
     required this.getActivityTotalUseCase,
+    required this.timerService,
   });
 
   Map<String, Activity> _activitiesMap = {};
   bool _isLoading = false;
   StreamSubscription? _tickSubscription;
-  int _tickCount = 0;
   final Map<String, double> _countsTotalCache = {};
 
   bool get isLoading => _isLoading;
@@ -78,6 +81,7 @@ class ActivityController extends ChangeNotifier {
     try {
       final list = await getActivitiesUseCase.execute();
       _activitiesMap = {for (var a in list) a.id: a};
+      timerService.start();
       _startTick();
     } catch (e) {
       debugPrint('Error loading activities: $e');
@@ -103,10 +107,7 @@ class ActivityController extends ChangeNotifier {
 
   void _startTick() {
     _tickSubscription?.cancel();
-    _tickCount = 0;
-    _tickSubscription = Stream.periodic(const Duration(seconds: 1)).listen((_) async {
-      _tickCount++;
-
+    _tickSubscription = timerService.onTick.listen((tick) async {
       final runningActivities = _activitiesMap.values.where((a) => a.status == ActivityStatus.running).toList();
 
       if (runningActivities.isEmpty) return;
@@ -114,17 +115,22 @@ class ActivityController extends ChangeNotifier {
       // 1. Notify listeners for UI duration updates
       notifyListeners();
 
-      // 2. Periodic Checkpoint (every 60 seconds) as per Step 13
-      if (_tickCount >= 60) {
-        _tickCount = 0;
-        for (final activity in runningActivities) {
-          await checkpointActivityUseCase.execute(activity.id);
-        }
-        // Refresh hidden state after checkpoint (to get new started_at and total_seconds)
-        final list = await getActivitiesUseCase.execute();
-        _activitiesMap = {for (var a in list) a.id: a};
+      // 2. Periodic Persistence (every 5 seconds)
+      if (tick.shouldPersist) {
+        await _persistRunningActivities(runningActivities);
       }
     });
+  }
+
+  Future<void> _persistRunningActivities(List<Activity> runningActivities) async {
+    for (final activity in runningActivities) {
+      // Use checkpoint use case which updates total_seconds and resets startedAt
+      await checkpointActivityUseCase.execute(activity.id);
+    }
+    // Refresh local state after persistence to get updated total_seconds/started_at
+    final list = await getActivitiesUseCase.execute();
+    _activitiesMap = {for (var a in list) a.id: a};
+    notifyListeners();
   }
 
   /// Calculates real-time duration for an activity.
@@ -212,6 +218,7 @@ class ActivityController extends ChangeNotifier {
   @override
   void dispose() {
     _tickSubscription?.cancel();
+    timerService.stop();
     super.dispose();
   }
 

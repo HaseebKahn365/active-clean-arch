@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/activity.dart';
-import '../providers/activity_provider.dart';
+import '../providers/activity_manager_provider.dart';
 import '../pages/dashboard/widgets/create_activity_sheet.dart';
 import 'package:duration_picker/duration_picker.dart';
 import 'package:intl/intl.dart';

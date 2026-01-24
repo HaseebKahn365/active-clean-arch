@@ -27,8 +27,8 @@ class DashboardPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatsRow(context),
-                  const SizedBox(height: 32),
+                  // _buildStatsRow(context),
+                  // const SizedBox(height: 32),
                   const PinnedActivityList(),
                   const SizedBox(height: 24),
                   Text(
@@ -243,68 +243,6 @@ class DashboardPage extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildStatsRow(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatsCard(
-            title: 'Active Today',
-            value: '4.5h',
-            icon: Icons.timer,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _StatsCard(title: 'Streak', value: '12 Days', icon: Icons.local_fire_department, color: Colors.orange),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatsCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _StatsCard({required this.title, required this.value, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final cardTheme = Theme.of(context).cardTheme;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
-        border: cardTheme.shape is RoundedRectangleBorder
-            ? Border.fromBorderSide((cardTheme.shape as RoundedRectangleBorder).side)
-            : null,
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 20, offset: const Offset(0, 10))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withAlpha(20), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            value,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
-          ),
-          Text(title, style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant)),
-        ],
-      ),
     );
   }
 }

@@ -17,7 +17,7 @@ class MockActivityRepository implements ActivityRepository {
   Future<Activity?> getActivityById(String id) async => activities[id];
 
   @override
-  Future<void> saveActivity(Activity activity) async {
+  Future<void> saveActivity(Activity activity, {SaveReason reason = SaveReason.immediate}) async {
     activities[activity.id] = activity;
   }
 
@@ -27,7 +27,7 @@ class MockActivityRepository implements ActivityRepository {
   }
 
   @override
-  Future<void> updateActivity(Activity activity) async {
+  Future<void> updateActivity(Activity activity, {SaveReason reason = SaveReason.immediate}) async {
     activities[activity.id] = activity;
   }
 

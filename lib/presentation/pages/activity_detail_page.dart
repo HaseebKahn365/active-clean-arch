@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/activity.dart';
-import '../providers/activity_provider.dart';
+import '../providers/activity_manager_provider.dart';
 import './dashboard/widgets/activity_tile.dart';
 import './dashboard/widgets/create_activity_sheet.dart';
 

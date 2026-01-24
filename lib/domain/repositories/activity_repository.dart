@@ -2,12 +2,14 @@ import '../entities/activity.dart';
 import '../entities/activity_event.dart';
 import '../entities/count_record.dart';
 
+enum SaveReason { immediate, periodic }
+
 abstract class ActivityRepository {
   Future<List<Activity>> getAllActivities();
   Future<Activity?> getActivityById(String id);
-  Future<void> saveActivity(Activity activity);
+  Future<void> saveActivity(Activity activity, {SaveReason reason = SaveReason.immediate});
   Future<void> deleteActivity(String id);
-  Future<void> updateActivity(Activity activity);
+  Future<void> updateActivity(Activity activity, {SaveReason reason = SaveReason.immediate});
   Future<void> saveEvent(ActivityEvent event);
   Future<List<ActivityEvent>> getAllEvents();
   Future<List<ActivityEvent>> getUnsyncedEvents();

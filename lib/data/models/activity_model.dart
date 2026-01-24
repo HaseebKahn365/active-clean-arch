@@ -5,6 +5,7 @@ class ActivityModel extends Activity {
   const ActivityModel({
     required super.id,
     required super.name,
+    super.description = '',
     super.parentId,
     required super.childrenIds,
     required super.status,
@@ -21,6 +22,7 @@ class ActivityModel extends Activity {
     return ActivityModel(
       id: entity.id,
       name: entity.name,
+      description: entity.description,
       parentId: entity.parentId,
       childrenIds: entity.childrenIds,
       status: entity.status,
@@ -38,6 +40,7 @@ class ActivityModel extends Activity {
     return ActivityModel(
       id: map['id'],
       name: map['name'],
+      description: map['description'] ?? '',
       parentId: map['parent_id'],
       childrenIds: List<String>.from(jsonDecode(map['children_ids'])),
       status: ActivityStatus.values.firstWhere((e) => e.toString() == map['status']),
@@ -58,6 +61,7 @@ class ActivityModel extends Activity {
     return {
       'id': id,
       'name': name,
+      'description': description,
       'parent_id': parentId,
       'children_ids': jsonEncode(childrenIds),
       'status': status.toString(),

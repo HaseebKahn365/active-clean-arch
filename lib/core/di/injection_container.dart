@@ -8,7 +8,7 @@ import '../../infrastructure/auth/google_auth_service.dart';
 import '../../domain/repositories/activity_repository.dart';
 import '../../domain/repositories/sync_repository.dart';
 import '../../data/repositories/sync_repository_impl.dart';
-import '../../data/repositories/in_memory_activity_repository.dart';
+import '../../data/repositories/sql_activity_repository.dart';
 import '../../domain/use_cases/activity/get_breadcrumbs_use_case.dart';
 import '../../domain/use_cases/activity/get_activities_use_case.dart';
 import '../../domain/use_cases/activity/delete_activity_use_case.dart';
@@ -31,11 +31,11 @@ import '../../domain/use_cases/backup/get_backup_history_use_case.dart';
 import '../../domain/use_cases/backup/restore_backup_use_case.dart';
 import '../../presentation/providers/backup_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../presentation/providers/activity_provider.dart';
+import '../../presentation/providers/activity_manager_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
 import '../../presentation/providers/sync_provider.dart';
 import '../../presentation/providers/theme_provider.dart';
-import '../constants/test_data.dart';
+import '../../application/services/activity_timer_service.dart';
 
 final sl = GetIt.instance;
 
@@ -52,6 +52,9 @@ Future<void> init() async {
   // Infrastructure
   sl.registerLazySingleton(() => SqliteService.instance);
   sl.registerLazySingleton(() => GoogleAuthService());
+
+  // Services
+  sl.registerLazySingleton(() => ActivityTimerService());
 
   // Presentation / State Management
   sl.registerFactory(() => AppAuthProvider(sl()));
@@ -72,6 +75,7 @@ Future<void> init() async {
       updateActivityDurationUseCase: sl(),
       addCountUseCase: sl(),
       getActivityTotalUseCase: sl(),
+      timerService: sl(),
     ),
   );
   sl.registerFactory(() => SyncController(activityRepository: sl(), syncRepository: sl(), connectivity: sl()));
@@ -107,7 +111,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => RestoreBackupUseCase(sl(), sl()));
 
   // Repository
-  sl.registerLazySingleton<ActivityRepository>(() => InMemoryActivityRepository(initialActivities: kTestActivities));
+  sl.registerLazySingleton<ActivityRepository>(() => SqlActivityRepository(sl()));
   sl.registerLazySingleton<SyncRepository>(() => SyncRepositoryImpl(sl()));
   sl.registerLazySingleton<BackupRepository>(() => BackupRepositoryImpl(sl(), sl()));
 }

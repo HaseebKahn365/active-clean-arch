@@ -1,0 +1,14 @@
+Analyzing active...                                             
+
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/create_backup_use_case.dart:17:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/create_backup_use_case.dart:24:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/create_backup_use_case.dart:62:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/create_backup_use_case.dart:67:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:18:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:24:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:55:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:80:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:95:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:105:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:137:5 • avoid_print
+

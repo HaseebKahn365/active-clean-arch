@@ -3,7 +3,7 @@ import '../../activity_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../domain/entities/activity.dart';
-import '../../../providers/activity_provider.dart';
+import '../../../providers/activity_manager_provider.dart';
 
 class ActivityTile extends StatefulWidget {
   final Activity activity;

@@ -1,7 +1,7 @@
 import 'package:active/domain/entities/activity.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/activity_provider.dart';
+import '../../../providers/activity_manager_provider.dart';
 import '../../activity_detail_page.dart';
 
 class PinnedActivityList extends StatelessWidget {
@@ -19,6 +19,7 @@ class PinnedActivityList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 16),
         Row(
           children: [
             Icon(Icons.push_pin, size: 18, color: colorScheme.primary),

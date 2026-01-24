@@ -15,13 +15,10 @@ class RestoreBackupUseCase {
   RestoreBackupUseCase(this.activityRepository, this.storage);
 
   Future<void> execute(String url) async {
-    print('RESTORE: Starting restore from $url');
-
     // 1. Pause all running activities
     final localActivities = await activityRepository.getAllActivities();
     for (final activity in localActivities) {
       if (activity.status == ActivityStatus.running) {
-        print('RESTORE: Pausing activity ${activity.name}');
         final now = DateTime.now();
         final delta = now.difference(activity.startedAt!).inSeconds;
         await activityRepository.updateActivity(
@@ -52,9 +49,7 @@ class RestoreBackupUseCase {
         .map((m) => CountRecordModel.fromMap(m))
         .toList();
 
-    print(
-      'RESTORE: Downloaded ${backupActivities.length} activities, ${backupEvents.length} events, ${backupRecords.length} records.',
-    );
+    // 3. Merge Logic
 
     // 3. Merge Logic
     // Refresh local activities after pausing
@@ -77,7 +72,6 @@ class RestoreBackupUseCase {
 
       if (lActivity == null) {
         // Option 1: No overwrite existing activities -> This means if it doesn't exist, we add it.
-        print('RESTORE: Adding new activity ${bActivity.name}');
         await activityRepository.saveActivity(bActivity);
 
         // Add associated events and records
@@ -92,9 +86,6 @@ class RestoreBackupUseCase {
         bool shouldUpdate = false;
         if (bActivity.type == ActivityType.timeBased) {
           if (bActivity.totalSeconds > lActivity.totalSeconds) {
-            print(
-              'RESTORE: Conflict for ${bActivity.name} (Time). Backup total seconds (${bActivity.totalSeconds}) > Local (${lActivity.totalSeconds}). Preserving Backup.',
-            );
             shouldUpdate = true;
           }
         } else {
@@ -102,9 +93,6 @@ class RestoreBackupUseCase {
           final lCount = localRecordsMap[bActivity.id]?.fold<double>(0, (prev, curr) => prev + curr.value) ?? 0;
 
           if (bCount > lCount) {
-            print(
-              'RESTORE: Conflict for ${bActivity.name} (Count). Backup total count ($bCount) > Local ($lCount). Preserving Backup.',
-            );
             shouldUpdate = true;
           }
         }
@@ -133,7 +121,5 @@ class RestoreBackupUseCase {
         }
       }
     }
-
-    print('RESTORE: Complete.');
   }
 }
