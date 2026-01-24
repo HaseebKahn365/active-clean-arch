@@ -37,6 +37,9 @@ class MockActivityRepository implements ActivityRepository {
   }
 
   @override
+  Future<List<ActivityEvent>> getAllEvents() async => List.from(events);
+
+  @override
   Future<List<ActivityEvent>> getUnsyncedEvents() async {
     return events.where((e) => !e.isSynced).toList();
   }
@@ -51,6 +54,9 @@ class MockActivityRepository implements ActivityRepository {
 
   @override
   Future<void> saveCountRecord(CountRecord record) async {}
+
+  @override
+  Future<List<CountRecord>> getAllCountRecords() async => [];
 
   @override
   Future<List<CountRecord>> getCountRecordsForActivity(String activityId) async => [];

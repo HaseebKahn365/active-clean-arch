@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../infrastructure/database/sqlite_service.dart';
 import '../../infrastructure/auth/google_auth_service.dart';
@@ -23,6 +24,12 @@ import '../../domain/use_cases/activity/calculate_cumulative_duration_use_case.d
 import '../../domain/use_cases/activity/update_activity_duration_use_case.dart';
 import '../../domain/use_cases/activity/add_count_use_case.dart';
 import '../../domain/use_cases/activity/get_activity_total_use_case.dart';
+import '../../domain/repositories/backup_repository.dart';
+import '../../data/repositories/backup_repository_impl.dart';
+import '../../domain/use_cases/backup/create_backup_use_case.dart';
+import '../../domain/use_cases/backup/get_backup_history_use_case.dart';
+import '../../domain/use_cases/backup/restore_backup_use_case.dart';
+import '../../presentation/providers/backup_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../presentation/providers/activity_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
@@ -36,6 +43,7 @@ Future<void> init() async {
   // External
   sl.registerLazySingleton(() => FirebaseAuth.instance);
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
+  sl.registerLazySingleton(() => FirebaseStorage.instance);
   sl.registerLazySingleton(() => Connectivity());
 
   final sharedPrefs = await SharedPreferences.getInstance();
@@ -67,6 +75,14 @@ Future<void> init() async {
     ),
   );
   sl.registerFactory(() => SyncController(activityRepository: sl(), syncRepository: sl(), connectivity: sl()));
+  sl.registerFactory(
+    () => BackupController(
+      createBackupUseCase: sl(),
+      getBackupHistoryUseCase: sl(),
+      restoreBackupUseCase: sl(),
+      authProvider: sl(),
+    ),
+  );
   sl.registerLazySingleton(() => ThemeProvider(sl()));
 
   // Use Cases
@@ -86,7 +102,12 @@ Future<void> init() async {
   sl.registerLazySingleton(() => AddCountUseCase(sl()));
   sl.registerLazySingleton(() => GetActivityTotalUseCase(sl()));
 
+  sl.registerLazySingleton(() => CreateBackupUseCase(sl(), sl()));
+  sl.registerLazySingleton(() => GetBackupHistoryUseCase(sl()));
+  sl.registerLazySingleton(() => RestoreBackupUseCase(sl(), sl()));
+
   // Repository
   sl.registerLazySingleton<ActivityRepository>(() => InMemoryActivityRepository(initialActivities: kTestActivities));
   sl.registerLazySingleton<SyncRepository>(() => SyncRepositoryImpl(sl()));
+  sl.registerLazySingleton<BackupRepository>(() => BackupRepositoryImpl(sl(), sl()));
 }

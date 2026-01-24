@@ -72,6 +72,13 @@ class ActivityRepositoryImpl implements ActivityRepository {
   }
 
   @override
+  Future<List<ActivityEvent>> getAllEvents() async {
+    final db = await sqliteService.database;
+    final maps = await db.query('activity_events');
+    return maps.map((map) => ActivityEventModel.fromMap(map)).toList();
+  }
+
+  @override
   Future<List<ActivityEvent>> getUnsyncedEvents() async {
     final db = await sqliteService.database;
     final maps = await db.query('activity_events', where: 'is_synced = 0');
@@ -89,6 +96,13 @@ class ActivityRepositoryImpl implements ActivityRepository {
     final db = await sqliteService.database;
     final model = CountRecordModel.fromEntity(record);
     await db.insert('count_records', model.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  @override
+  Future<List<CountRecord>> getAllCountRecords() async {
+    final db = await sqliteService.database;
+    final maps = await db.query('count_records');
+    return maps.map((map) => CountRecordModel.fromMap(map)).toList();
   }
 
   @override

@@ -9,11 +9,13 @@ abstract class ActivityRepository {
   Future<void> deleteActivity(String id);
   Future<void> updateActivity(Activity activity);
   Future<void> saveEvent(ActivityEvent event);
+  Future<List<ActivityEvent>> getAllEvents();
   Future<List<ActivityEvent>> getUnsyncedEvents();
   Future<void> markEventAsSynced(String id);
 
   // Count Records
   Future<void> saveCountRecord(CountRecord record);
+  Future<List<CountRecord>> getAllCountRecords();
   Future<List<CountRecord>> getCountRecordsForActivity(String activityId);
   Future<void> deleteCountRecord(String id);
 }

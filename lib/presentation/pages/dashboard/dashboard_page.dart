@@ -7,6 +7,7 @@ import '../../theme/app_color_schemes.dart';
 import 'widgets/activity_list.dart';
 import 'widgets/pinned_activity_list.dart';
 import 'widgets/create_activity_sheet.dart';
+import '../backup/backup_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -70,7 +71,15 @@ class DashboardPage extends StatelessWidget {
       expandedHeight: 200,
       pinned: true,
       backgroundColor: colorScheme.primary,
-      actions: [_buildThemeSelector(context)],
+      actions: [
+        IconButton(
+          icon: Icon(Icons.cloud_sync_outlined, color: colorScheme.onPrimary),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupPage()));
+          },
+        ),
+        _buildThemeSelector(context),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(

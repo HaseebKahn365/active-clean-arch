@@ -8,6 +8,7 @@ import 'presentation/providers/activity_provider.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/sync_provider.dart';
 import 'presentation/providers/theme_provider.dart';
+import 'presentation/providers/backup_provider.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/pages/auth/sign_in_page.dart';
 import 'presentation/pages/dashboard/dashboard_page.dart';
@@ -37,6 +38,7 @@ Future<void> main() async {
           },
         ),
         ChangeNotifierProvider(create: (_) => di.sl<ThemeProvider>()),
+        ChangeNotifierProvider(create: (_) => di.sl<BackupController>()),
       ],
       child: const ActiveApp(),
     ),
