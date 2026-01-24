@@ -95,15 +95,15 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
           borderRadius: BorderRadius.circular(24),
           child: Stack(
             children: [
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 6,
-                child: Container(
-                  color: widget.activity.type == ActivityType.timeBased ? colorScheme.primary : const Color(0xFF10B981),
-                ),
-              ),
+              // Positioned(
+              //   left: 0,
+              //   top: 0,
+              //   bottom: 0,
+              //   width: 6,
+              //   child: Container(
+              //     color: widget.activity.type == ActivityType.timeBased ? colorScheme.primary : const Color(0xFF10B981),
+              //   ),
+              // ),
               InkWell(
                 borderRadius: BorderRadius.circular(24),
                 onTapDown: dragging ? null : _onTapDown,
@@ -118,7 +118,7 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                         );
                       },
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 22, right: 16, top: 16, bottom: 16),
+                  padding: const EdgeInsets.only(left: 18, right: 12, top: 12, bottom: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -127,14 +127,14 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: _getStatusColor(context).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Icon(_getStatusIcon(), color: _getStatusColor(context), size: 20),
+                            child: Icon(_getStatusIcon(), color: _getStatusColor(context), size: 18),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,25 +147,18 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                           color: colorScheme.onSurface,
                                         ),
                                       ),
-                                    ),
-                                    Icon(
-                                      widget.activity.type == ActivityType.timeBased
-                                          ? Icons.timer_outlined
-                                          : Icons.numbers_rounded,
-                                      size: 16,
-                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                                     ),
                                   ],
                                 ),
                                 Text(
                                   _getStatusLabel(),
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 0.5,
                                     color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -191,7 +184,7 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                           _buildMoreMenu(context),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       // Middle Section: Metrics
                       Wrap(
                         spacing: 12,
@@ -205,14 +198,15 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                           ] else ...[
                             _CountText(activityId: widget.activity.id, isProminent: true),
                             _DurationText(activityId: widget.activity.id),
+                            _CumulativeDurationText(activityId: widget.activity.id),
                           ],
                         ],
                       ),
                       // Bottom Section: Actions (Only if not dragging)
                       if (!dragging) ...[
-                        const SizedBox(height: 16),
-                        const Divider(height: 1),
                         const SizedBox(height: 12),
+                        const Divider(height: 1),
+                        const SizedBox(height: 8),
                         _buildActions(context),
                       ],
                     ],
@@ -363,7 +357,7 @@ class _CumulativeDurationText extends StatelessWidget {
     return Text(
       '• Total: ${_formatDuration(totalSeconds)}',
       style: TextStyle(
-        fontSize: 14,
+        fontSize: 12,
         fontFamily: 'monospace',
         fontWeight: FontWeight.w400,
         color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
@@ -395,7 +389,7 @@ class _DurationText extends StatelessWidget {
     return Text(
       _formatDuration(durationInSeconds),
       style: TextStyle(
-        fontSize: isProminent ? 18 : 14,
+        fontSize: isProminent ? 16 : 12,
         fontFamily: 'monospace',
         fontWeight: isProminent ? FontWeight.bold : FontWeight.w600,
         color: isProminent ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -426,7 +420,7 @@ class _CountText extends StatelessWidget {
     return Text(
       'Count: ${total % 1 == 0 ? total.toInt() : total}',
       style: TextStyle(
-        fontSize: isProminent ? 18 : 14,
+        fontSize: isProminent ? 16 : 12,
         fontWeight: isProminent ? FontWeight.bold : FontWeight.w600,
         color: isProminent ? const Color(0xFF10B981) : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
@@ -490,23 +484,23 @@ class _ActionButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: isOutlined ? Colors.transparent : color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: color.withValues(alpha: isOutlined ? 1.0 : 0.2),
-            width: isOutlined ? 2 : 1,
+            width: isOutlined ? 1.5 : 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 18),
+            Icon(icon, color: color, size: 16),
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
+              style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
             ),
           ],
         ),

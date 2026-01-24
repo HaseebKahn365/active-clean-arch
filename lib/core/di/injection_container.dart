@@ -28,6 +28,7 @@ import '../../presentation/providers/activity_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
 import '../../presentation/providers/sync_provider.dart';
 import '../../presentation/providers/theme_provider.dart';
+import '../constants/test_data.dart';
 
 final sl = GetIt.instance;
 
@@ -86,6 +87,6 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetActivityTotalUseCase(sl()));
 
   // Repository
-  sl.registerLazySingleton<ActivityRepository>(() => InMemoryActivityRepository());
+  sl.registerLazySingleton<ActivityRepository>(() => InMemoryActivityRepository(initialActivities: kTestActivities));
   sl.registerLazySingleton<SyncRepository>(() => SyncRepositoryImpl(sl()));
 }

@@ -8,6 +8,14 @@ class InMemoryActivityRepository implements ActivityRepository {
   final List<ActivityEvent> _events = [];
   final List<CountRecord> _countRecords = [];
 
+  InMemoryActivityRepository({List<Activity>? initialActivities}) {
+    if (initialActivities != null) {
+      for (final activity in initialActivities) {
+        _activities[activity.id] = activity;
+      }
+    }
+  }
+
   @override
   Future<List<Activity>> getAllActivities() async {
     // Simulate network/disk delay

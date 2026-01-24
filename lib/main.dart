@@ -11,6 +11,7 @@ import 'presentation/providers/theme_provider.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/pages/auth/sign_in_page.dart';
 import 'presentation/pages/dashboard/dashboard_page.dart';
+import 'presentation/widgets/mac_swipe_back_navigator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,8 @@ Future<void> main() async {
   );
 }
 
+final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
 class ActiveApp extends StatelessWidget {
   const ActiveApp({super.key});
 
@@ -51,10 +54,12 @@ class ActiveApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'Active',
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.getTheme(themeProvider.colorProfile, Brightness.light),
       darkTheme: AppTheme.getTheme(themeProvider.colorProfile, Brightness.dark),
       themeMode: themeProvider.themeMode,
+      builder: (context, child) => MacSwipeBackNavigator(navigatorKey: _navigatorKey, child: child!),
       home: const AuthGate(),
     );
   }
