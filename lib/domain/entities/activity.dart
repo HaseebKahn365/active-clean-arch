@@ -6,6 +6,7 @@ class Activity extends Equatable {
   final String id;
   final String name;
   final String description;
+  final bool isPinned;
   final String? parentId;
   final List<String> childrenIds;
   final ActivityStatus status;
@@ -18,6 +19,7 @@ class Activity extends Equatable {
     required this.id,
     required this.name,
     this.description = '',
+    this.isPinned = false,
     this.parentId,
     required this.childrenIds,
     required this.status,
@@ -30,6 +32,7 @@ class Activity extends Equatable {
   Activity copyWith({
     String? name,
     String? description,
+    bool? isPinned,
     String? Function()? parentId,
     List<String>? childrenIds,
     ActivityStatus? status,
@@ -42,6 +45,7 @@ class Activity extends Equatable {
       id: id,
       name: name ?? this.name,
       description: description ?? this.description,
+      isPinned: isPinned ?? this.isPinned,
       parentId: parentId != null ? parentId() : this.parentId,
       childrenIds: childrenIds ?? this.childrenIds,
       status: status ?? this.status,
@@ -57,6 +61,7 @@ class Activity extends Equatable {
     id,
     name,
     description,
+    isPinned,
     parentId,
     childrenIds,
     status,

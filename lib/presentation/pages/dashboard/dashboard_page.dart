@@ -5,6 +5,7 @@ import '../../providers/sync_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/app_color_schemes.dart';
 import 'widgets/activity_list.dart';
+import 'widgets/pinned_activity_list.dart';
 import 'widgets/create_activity_sheet.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -27,6 +28,7 @@ class DashboardPage extends StatelessWidget {
                 children: [
                   _buildStatsRow(context),
                   const SizedBox(height: 32),
+                  const PinnedActivityList(),
                   Text(
                     'Current Activities',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),

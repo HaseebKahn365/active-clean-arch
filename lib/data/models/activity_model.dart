@@ -12,6 +12,7 @@ class ActivityModel extends Activity {
     required super.totalSeconds,
     required super.createdAt,
     required super.updatedAt,
+    super.isPinned = false,
   });
 
   factory ActivityModel.fromEntity(Activity entity) {
@@ -25,6 +26,7 @@ class ActivityModel extends Activity {
       totalSeconds: entity.totalSeconds,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+      isPinned: entity.isPinned,
     );
   }
 
@@ -39,6 +41,7 @@ class ActivityModel extends Activity {
       totalSeconds: map['total_seconds'],
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
+      isPinned: map['is_pinned'] == 1,
     );
   }
 
@@ -51,6 +54,7 @@ class ActivityModel extends Activity {
       'status': status.toString(),
       'started_at': startedAt?.toIso8601String(),
       'total_seconds': totalSeconds,
+      'is_pinned': isPinned ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

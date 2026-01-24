@@ -10,6 +10,7 @@ import '../../domain/use_cases/activity/checkpoint_activity_use_case.dart';
 import '../../domain/use_cases/activity/create_activity_use_case.dart';
 import '../../domain/use_cases/activity/get_breadcrumbs_use_case.dart';
 import '../../domain/use_cases/activity/update_activity_use_case.dart';
+import '../../domain/use_cases/activity/toggle_pin_use_case.dart';
 
 class ActivityController extends ChangeNotifier {
   final GetActivitiesUseCase getActivitiesUseCase;
@@ -21,6 +22,7 @@ class ActivityController extends ChangeNotifier {
   final CreateActivityUseCase createActivityUseCase;
   final GetBreadcrumbsUseCase getBreadcrumbsUseCase;
   final UpdateActivityUseCase updateActivityUseCase;
+  final TogglePinUseCase togglePinUseCase;
 
   ActivityController({
     required this.getActivitiesUseCase,
@@ -32,6 +34,7 @@ class ActivityController extends ChangeNotifier {
     required this.createActivityUseCase,
     required this.getBreadcrumbsUseCase,
     required this.updateActivityUseCase,
+    required this.togglePinUseCase,
   });
 
   Map<String, Activity> _activitiesMap = {};
@@ -44,6 +47,10 @@ class ActivityController extends ChangeNotifier {
   /// Returns sorted root activities
   List<Activity> get roots =>
       _activitiesMap.values.where((a) => a.parentId == null).toList()..sort((a, b) => a.name.compareTo(b.name));
+
+  /// Returns pinned activities
+  List<Activity> get pinnedActivities =>
+      _activitiesMap.values.where((a) => a.isPinned).toList()..sort((a, b) => a.name.compareTo(b.name));
 
   /// Exposed for fast lookup in Selectors
   Map<String, Activity> get activitiesMap => _activitiesMap;
@@ -132,6 +139,11 @@ class ActivityController extends ChangeNotifier {
 
   Future<void> updateActivity(String id, {String? name, String? description}) async {
     await updateActivityUseCase.execute(id, name: name, description: description);
+    await loadActivities();
+  }
+
+  Future<void> togglePin(String id) async {
+    await togglePinUseCase.execute(id);
     await loadActivities();
   }
 

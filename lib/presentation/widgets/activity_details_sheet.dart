@@ -110,6 +110,21 @@ class _ActivityDetailsSheetState extends State<ActivityDetailsSheet> {
                                 return Row(
                                   children: [
                                     Expanded(child: Text(name, style: titleLarge)),
+                                    Selector<ActivityController, bool>(
+                                      selector: (_, ctrl) =>
+                                          ctrl.activitiesMap[widget.activity.id]?.isPinned ?? widget.activity.isPinned,
+                                      builder: (context, isPinned, _) {
+                                        return IconButton(
+                                          icon: Icon(
+                                            isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                                            size: 20,
+                                            color: isPinned ? colorScheme.primary : null,
+                                          ),
+                                          onPressed: () => widget.controller.togglePin(widget.activity.id),
+                                          visualDensity: VisualDensity.compact,
+                                        );
+                                      },
+                                    ),
                                     IconButton(
                                       icon: const Icon(Icons.edit_outlined, size: 20),
                                       onPressed: () => setState(() => _isEditing = true),
