@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../providers/stats_provider.dart';
 import '../../providers/activity_manager_provider.dart';
 import 'helpers/time_axis_formatter.dart';
+import '../../widgets/interactive_bar_chart.dart';
 import '../../../domain/entities/activity.dart';
 import '../../../domain/entities/activity_event.dart';
 
@@ -444,13 +445,22 @@ class _ActivityStatsPageState extends State<ActivityStatsPage> with SingleTicker
           const SizedBox(height: 32),
           SizedBox(
             height: 250,
-            child: BarChart(
-              BarChartData(
+            child: InteractiveBarChart(
+              dataCount: sortedEntry.length,
+              barValues: sortedEntry.map((e) => e.value).toList(),
+              initialWindowSize: stats.selectedRange == TimeRange.month
+                  ? 15
+                  : (stats.selectedRange == TimeRange.year ? 30 : 7),
+              dataBuilder: (minX, maxX, minY, maxY) => BarChartData(
+                minY: minY,
+                maxY: maxY,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
                     getTooltipColor: (_) => colorScheme.surfaceContainerHighest,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final date = sortedEntry[group.x].key;
+                      final index = group.x.round();
+                      if (index < 0 || index >= sortedEntry.length) return null;
+                      final date = sortedEntry[index].key;
                       final val = rod.toY.toStringAsFixed(isCountBased ? 0 : 1);
                       final unit = isCountBased ? 'units' : 'h';
                       return BarTooltipItem(
@@ -461,19 +471,27 @@ class _ActivityStatsPageState extends State<ActivityStatsPage> with SingleTicker
                   ),
                 ),
                 borderData: FlBorderData(show: false),
-                gridData: const FlGridData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (value) =>
+                      FlLine(color: colorScheme.outlineVariant.withValues(alpha: 0.1), strokeWidth: 1),
+                ),
                 titlesData: FlTitlesData(
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 32,
-                      interval: TimeAxisFormatter.getInterval(sortedEntry.length, stats.selectedRange),
+                      reservedSize: 40,
+                      interval: TimeAxisFormatter.getInterval(maxX - minX, stats.selectedRange),
                       getTitlesWidget: (value, meta) {
-                        if (value.toInt() >= sortedEntry.length || value.toInt() < 0) {
+                        final index = value.round();
+                        if (index >= sortedEntry.length || index < 0) {
                           return const SizedBox();
                         }
 
-                        final date = sortedEntry[value.toInt()].key;
+                        if ((value - index).abs() > 0.01) return const SizedBox();
+
+                        final date = sortedEntry[index].key;
                         return Padding(
                           padding: const EdgeInsets.only(top: 12.0),
                           child: Text(
@@ -484,11 +502,24 @@ class _ActivityStatsPageState extends State<ActivityStatsPage> with SingleTicker
                       },
                     ),
                   ),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (value, meta) {
+                        final valStr = isCountBased ? value.toInt().toString() : '${value.toStringAsFixed(1)}h';
+                        return Text(
+                          valStr,
+                          style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                        );
+                      },
+                    ),
+                  ),
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
                 barGroups: List.generate(sortedEntry.length, (i) {
+                  if (i < minX - 1 || i > maxX + 1) return null;
                   return BarChartGroupData(
                     x: i,
                     barRods: [
@@ -497,12 +528,14 @@ class _ActivityStatsPageState extends State<ActivityStatsPage> with SingleTicker
                         color: i == sortedEntry.length - 1
                             ? colorScheme.primary
                             : colorScheme.primary.withValues(alpha: 0.3),
-                        width: isDesktop ? 24 : 16,
+                        width: isDesktop
+                            ? (24 / (maxX - minX + 1) * 7).clamp(8, 24)
+                            : (16 / (maxX - minX + 1) * 7).clamp(4, 16),
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                       ),
                     ],
                   );
-                }),
+                }).whereType<BarChartGroupData>().toList(),
               ),
             ),
           ),

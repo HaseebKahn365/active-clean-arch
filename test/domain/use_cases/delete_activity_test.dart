@@ -63,6 +63,12 @@ class MockActivityRepository implements ActivityRepository {
 
   @override
   Future<void> deleteCountRecord(String id) async {}
+
+  @override
+  Future<void> clearAllData() async {
+    activities.clear();
+    events.clear();
+  }
 }
 
 void main() {

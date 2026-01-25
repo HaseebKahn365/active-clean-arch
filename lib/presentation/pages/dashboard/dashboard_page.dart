@@ -1,3 +1,4 @@
+import 'package:active/presentation/providers/activity_manager_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -9,8 +10,32 @@ import 'widgets/pinned_activity_list.dart';
 import 'widgets/create_activity_sheet.dart';
 import '../backup/backup_page.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        context.read<ActivityController>().searchQuery = '';
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +52,6 @@ class DashboardPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // _buildStatsRow(context),
-                  // const SizedBox(height: 32),
                   const PinnedActivityList(),
                   const SizedBox(height: 24),
                   Text(
@@ -49,7 +72,6 @@ class DashboardPage extends StatelessWidget {
             context: context,
             isScrollControlled: true,
             barrierColor: Colors.transparent,
-
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             builder: (context) => const CreateActivitySheet(),
           );
@@ -68,10 +90,44 @@ class DashboardPage extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: _isSearching ? 120 : 200,
       pinned: true,
+      centerTitle: false,
       backgroundColor: colorScheme.primary,
+      title: _isSearching
+          ? TextField(
+              controller: _searchController,
+              autofocus: true,
+              style: TextStyle(color: colorScheme.onPrimary),
+              decoration: InputDecoration(
+                hintText: 'Search activities...',
+                hintStyle: TextStyle(color: colorScheme.onPrimary.withAlpha(150)),
+                border: InputBorder.none,
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.clear, color: colorScheme.onPrimary),
+                  onPressed: () {
+                    _searchController.clear();
+                    context.read<ActivityController>().searchQuery = '';
+                  },
+                ),
+              ),
+              onChanged: (value) {
+                context.read<ActivityController>().searchQuery = value;
+              },
+            )
+          : null,
+      leading: _isSearching
+          ? IconButton(
+              icon: Icon(Icons.arrow_back, color: colorScheme.onPrimary),
+              onPressed: _toggleSearch,
+            )
+          : null,
       actions: [
+        if (!_isSearching)
+          IconButton(
+            icon: Icon(Icons.search, color: colorScheme.onPrimary),
+            onPressed: _toggleSearch,
+          ),
         IconButton(
           icon: Icon(Icons.cloud_sync_outlined, color: colorScheme.onPrimary),
           onPressed: () {
@@ -84,7 +140,6 @@ class DashboardPage extends StatelessWidget {
         ),
         _buildThemeSelector(context),
       ],
-
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -94,60 +149,65 @@ class DashboardPage extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Row(
-                    children: [
-                      if (user?.photoURL != null)
-                        CircleAvatar(backgroundImage: NetworkImage(user.photoURL!), radius: 24)
-                      else
-                        CircleAvatar(
-                          backgroundColor: colorScheme.onPrimary.withAlpha(40),
-                          child: Icon(Icons.person, color: colorScheme.onPrimary),
+          child: _isSearching
+              ? const SizedBox.shrink()
+              : SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Row(
+                          children: [
+                            if (user?.photoURL != null)
+                              CircleAvatar(backgroundImage: NetworkImage(user.photoURL!), radius: 24)
+                            else
+                              CircleAvatar(
+                                backgroundColor: colorScheme.onPrimary.withAlpha(40),
+                                child: Icon(Icons.person, color: colorScheme.onPrimary),
+                              ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Hello, ${user?.displayName?.split(" ").first ?? "User"}!',
+                                  style: TextStyle(
+                                    color: colorScheme.onPrimary,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Consumer<SyncController>(
+                                  builder: (context, sync, _) {
+                                    return Row(
+                                      children: [
+                                        Container(
+                                          width: 8,
+                                          height: 8,
+                                          decoration: BoxDecoration(
+                                            color: sync.isSyncing ? Colors.orange : Colors.greenAccent,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          sync.isSyncing ? 'Syncing...' : 'Cloud Synced',
+                                          style: TextStyle(color: colorScheme.onPrimary.withAlpha(200), fontSize: 12),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hello, ${user?.displayName?.split(" ").first ?? "User"}!',
-                            style: TextStyle(color: colorScheme.onPrimary, fontSize: 24, fontWeight: FontWeight.bold),
-                          ),
-                          Consumer<SyncController>(
-                            builder: (context, sync, _) {
-                              return Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: sync.isSyncing ? Colors.orange : Colors.greenAccent,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    sync.isSyncing ? 'Syncing...' : 'Cloud Synced',
-                                    style: TextStyle(color: colorScheme.onPrimary.withAlpha(200), fontSize: 12),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const Spacer(),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                ),
         ),
       ),
     );

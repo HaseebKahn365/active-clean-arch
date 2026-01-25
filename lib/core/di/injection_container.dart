@@ -24,6 +24,7 @@ import '../../domain/use_cases/activity/calculate_cumulative_duration_use_case.d
 import '../../domain/use_cases/activity/update_activity_duration_use_case.dart';
 import '../../domain/use_cases/activity/add_count_use_case.dart';
 import '../../domain/use_cases/activity/get_activity_total_use_case.dart';
+import '../../domain/use_cases/activity/clear_all_data_use_case.dart';
 import '../../domain/repositories/backup_repository.dart';
 import '../../data/repositories/backup_repository_impl.dart';
 import '../../domain/use_cases/backup/create_backup_use_case.dart';
@@ -76,6 +77,7 @@ Future<void> init() async {
       updateActivityDurationUseCase: sl(),
       addCountUseCase: sl(),
       getActivityTotalUseCase: sl(),
+      clearAllDataUseCase: sl(),
       timerService: sl(),
     ),
   );
@@ -107,6 +109,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => UpdateActivityDurationUseCase(sl()));
   sl.registerLazySingleton(() => AddCountUseCase(sl()));
   sl.registerLazySingleton(() => GetActivityTotalUseCase(sl()));
+  sl.registerLazySingleton(() => ClearAllDataUseCase(sl()));
 
   sl.registerLazySingleton(() => CreateBackupUseCase(sl(), sl()));
   sl.registerLazySingleton(() => GetBackupHistoryUseCase(sl()));

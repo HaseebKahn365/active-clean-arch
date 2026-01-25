@@ -1,3 +1,4 @@
+import 'package:active/presentation/widgets/mac_swipe_back_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -5,6 +6,8 @@ import '../../providers/stats_provider.dart';
 import '../../../domain/entities/activity.dart';
 import 'package:intl/intl.dart';
 import 'helpers/time_axis_formatter.dart';
+import '../../widgets/interactive_line_chart.dart';
+import '../../widgets/interactive_bar_chart.dart';
 
 class GlobalStatsPage extends StatefulWidget {
   const GlobalStatsPage({super.key});
@@ -36,40 +39,29 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
           ? const Center(child: CircularProgressIndicator())
           : LayoutBuilder(
               builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Center(
-                    child: Container(
+                return Column(
+                  children: [
+                    Container(
                       constraints: const BoxConstraints(maxWidth: 1400),
-                      child: isDesktop ? _buildDesktopLayout(context, stats) : _buildMobileLayout(context, stats),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      child: _buildRangeSelector(stats),
                     ),
-                  ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Center(
+                          child: Container(
+                            constraints: const BoxConstraints(maxWidth: 1400),
+                            child: isDesktop ? _buildDesktopLayout(context, stats) : _buildMobileLayout(context, stats),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
-    );
-  }
-
-  Widget _buildDesktopRangeSelector(StatsController stats) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: ToggleButtons(
-        borderRadius: BorderRadius.circular(12),
-        constraints: const BoxConstraints(minHeight: 36, minWidth: 80),
-        isSelected: TimeRange.values.map((r) => stats.selectedRange == r).toList(),
-        onPressed: (index) => stats.setRange(TimeRange.values[index]),
-        children: TimeRange.values
-            .map(
-              (r) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  r.name.toUpperCase(),
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5),
-                ),
-              ),
-            )
-            .toList(),
-      ),
     );
   }
 
@@ -77,8 +69,6 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildMobileRangeSelector(stats),
-        const SizedBox(height: 16),
         _buildSummaryGrid(context, stats, crossAxisCount: 2),
         const SizedBox(height: 24),
         _buildMainTrendChart(context, stats),
@@ -92,7 +82,7 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
     );
   }
 
-  Widget _buildMobileRangeSelector(StatsController stats) {
+  Widget _buildRangeSelector(StatsController stats) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -260,43 +250,76 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
           const SizedBox(height: 32),
           SizedBox(
             height: 350,
-            child: LineChart(
-              LineChartData(
+            child: InteractiveLineChart(
+              spots: spots,
+              initialWindowSize: stats.selectedRange == TimeRange.month
+                  ? 30
+                  : (stats.selectedRange == TimeRange.year ? 365 : 7),
+              dataBuilder: (minX, maxX, minY, maxY) => LineChartData(
+                minX: minX,
+                maxX: maxX,
+                minY: minY,
+                maxY: maxY,
+                clipData: const FlClipData.none(),
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipColor: (_) => colorScheme.surfaceContainerHighest,
                     getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        final date = sortedDates[spot.x.toInt()];
-                        final hours = spot.y.toStringAsFixed(1);
-                        return LineTooltipItem(
-                          '${TimeAxisFormatter.getTooltipDateFormat(date, stats.selectedRange)}\n$hours hours',
-                          const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                        );
-                      }).toList();
+                      return touchedSpots
+                          .map((spot) {
+                            final index = spot.x.round();
+                            if (index < 0 || index >= sortedDates.length) return null;
+                            final date = sortedDates[index];
+                            final hours = spot.y.toStringAsFixed(1);
+                            return LineTooltipItem(
+                              '${TimeAxisFormatter.getTooltipDateFormat(date, stats.selectedRange)}\n$hours hours',
+                              const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                            );
+                          })
+                          .toList()
+                          .whereType<LineTooltipItem>()
+                          .toList();
                     },
                   ),
                 ),
                 gridData: FlGridData(
                   show: true,
-                  drawVerticalLine: false,
+                  drawVerticalLine: true,
+                  verticalInterval: TimeAxisFormatter.getInterval(maxX - minX, stats.selectedRange),
                   getDrawingHorizontalLine: (value) =>
+                      FlLine(color: colorScheme.outlineVariant.withValues(alpha: 0.1), strokeWidth: 1),
+                  getDrawingVerticalLine: (value) =>
                       FlLine(color: colorScheme.outlineVariant.withValues(alpha: 0.1), strokeWidth: 1),
                 ),
                 titlesData: FlTitlesData(
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          '${value.toStringAsFixed(1)}h',
+                          style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold),
+                        );
+                      },
+                    ),
+                  ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 32,
-                      interval: TimeAxisFormatter.getInterval(spots.length, stats.selectedRange),
+                      reservedSize: 40,
+                      interval: TimeAxisFormatter.getInterval(maxX - minX, stats.selectedRange),
                       getTitlesWidget: (value, meta) {
-                        if (value.toInt() >= sortedDates.length || value.toInt() < 0) {
+                        final index = value.round();
+                        if (index >= sortedDates.length || index < 0) {
                           return const SizedBox();
                         }
 
-                        final date = sortedDates[value.toInt()];
+                        if ((value - index).abs() > 0.01) return const SizedBox();
+
+                        final date = sortedDates[index];
                         return Padding(
                           padding: const EdgeInsets.only(top: 12.0),
                           child: Text(
@@ -409,7 +432,10 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
                     decoration: BoxDecoration(color: colors[index % colors.length], shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 8),
-                  Text(entry.value.key, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text(
+                    '${entry.value.key} (${(entry.value.value / 3600).toStringAsFixed(1)}h)',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
                 ],
               );
             }).toList(),
@@ -504,9 +530,32 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
         const SizedBox(height: 16),
         SizedBox(
           height: 220,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: metrics.values.map((m) => _buildDensityCard(context, m)).toList(),
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollStartNotification) {
+                MacSwipeBackNavigator.isBlocked = true;
+              } else if (notification is ScrollEndNotification) {
+                MacSwipeBackNavigator.isBlocked = false;
+              }
+              return false;
+            },
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              physics: const AlwaysScrollableScrollPhysics(), // Ensure it can overscroll slightly
+              children: () {
+                final list = metrics.values.toList();
+                list.sort((a, b) {
+                  final aLatest = a.dailyCounts.keys.isEmpty
+                      ? DateTime(2000)
+                      : a.dailyCounts.keys.reduce((curr, next) => curr.isAfter(next) ? curr : next);
+                  final bLatest = b.dailyCounts.keys.isEmpty
+                      ? DateTime(2000)
+                      : b.dailyCounts.keys.reduce((curr, next) => curr.isAfter(next) ? curr : next);
+                  return bLatest.compareTo(aLatest);
+                });
+                return list.map((m) => _buildDensityCard(context, m)).toList();
+              }(),
+            ),
           ),
         ),
       ],
@@ -515,9 +564,6 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
 
   Widget _buildDensityCard(BuildContext context, CountBasedMetrics metrics) {
     final colorScheme = Theme.of(context).colorScheme;
-    final maxCount = metrics.dailyCounts.values.isEmpty
-        ? 1.0
-        : metrics.dailyCounts.values.reduce((a, b) => a > b ? a : b);
     final sortedDates = metrics.dailyCounts.keys.toList()..sort();
 
     return Container(
@@ -565,25 +611,82 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
           ),
           const Spacer(),
           SizedBox(
-            height: 60,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: sortedDates.reversed.take(14).toList().reversed.map((date) {
-                final count = metrics.dailyCounts[date] ?? 0;
-                final heightFactor = maxCount > 0 ? (count / maxCount) : 0.0;
-                return Tooltip(
-                  message: '${DateFormat('MMM d').format(date)}: ${count.toInt()} units',
-                  child: Container(
-                    width: 12,
-                    height: (50 * heightFactor).clamp(2.0, 50.0),
-                    decoration: BoxDecoration(
-                      color: count > 0 ? colorScheme.primary : colorScheme.outlineVariant.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(4),
+            height: 100, // Slightly taller for pan/zoom space
+            child: InteractiveBarChart(
+              dataCount: sortedDates.length,
+              barValues: sortedDates.map((d) => metrics.dailyCounts[d] ?? 0.0).toList(),
+              initialWindowSize: 14,
+              minWindowSize: 4,
+              topPadding: 10,
+              dataBuilder: (minX, maxX, minY, maxY) {
+                final barValues = sortedDates.map((d) => metrics.dailyCounts[d] ?? 0.0).toList();
+                return BarChartData(
+                  minY: minY,
+                  maxY: maxY,
+                  borderData: FlBorderData(show: false),
+                  gridData: const FlGridData(show: false),
+                  barGroups: List.generate(sortedDates.length, (i) {
+                    if (i < minX - 1 || i > maxX + 1) return null;
+                    return BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: barValues[i],
+                          color: colorScheme.primary,
+                          width: 8,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ],
+                    );
+                  }).whereType<BarChartGroupData>().toList(),
+                  barTouchData: BarTouchData(
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipColor: (_) => colorScheme.surfaceContainerHighest,
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final date = sortedDates[group.x];
+                        return BarTooltipItem(
+                          '${DateFormat('MMM d').format(date)}\n${rod.toY.toInt()} units',
+                          const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                        );
+                      },
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 20,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.round();
+                          if (index < 0 || index >= sortedDates.length) return const SizedBox.shrink();
+
+                          // Only show labels for first and last visible bars to keep it minimalist
+                          final bool isStart = (value - minX).abs() < 0.5;
+                          final bool isEnd = (value - maxX).abs() < 0.5;
+
+                          if (!isStart && !isEnd) return const SizedBox.shrink();
+
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              DateFormat('d MMM').format(sortedDates[index]),
+                              style: TextStyle(
+                                fontSize: 8,
+                                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                 );
-              }).toList(),
+              },
             ),
           ),
         ],

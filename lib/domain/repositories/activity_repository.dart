@@ -20,4 +20,5 @@ abstract class ActivityRepository {
   Future<List<CountRecord>> getAllCountRecords();
   Future<List<CountRecord>> getCountRecordsForActivity(String activityId);
   Future<void> deleteCountRecord(String id);
+  Future<void> clearAllData();
 }

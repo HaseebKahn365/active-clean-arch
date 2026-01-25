@@ -17,6 +17,7 @@ import '../../domain/use_cases/activity/calculate_cumulative_duration_use_case.d
 import '../../domain/use_cases/activity/update_activity_duration_use_case.dart';
 import '../../domain/use_cases/activity/add_count_use_case.dart';
 import '../../domain/use_cases/activity/get_activity_total_use_case.dart';
+import '../../domain/use_cases/activity/clear_all_data_use_case.dart';
 
 class ActivityController extends ChangeNotifier {
   final GetActivitiesUseCase getActivitiesUseCase;
@@ -34,6 +35,7 @@ class ActivityController extends ChangeNotifier {
   final UpdateActivityDurationUseCase updateActivityDurationUseCase;
   final AddCountUseCase addCountUseCase;
   final GetActivityTotalUseCase getActivityTotalUseCase;
+  final ClearAllDataUseCase clearAllDataUseCase;
 
   final ActivityTimerService timerService;
 
@@ -53,6 +55,7 @@ class ActivityController extends ChangeNotifier {
     required this.updateActivityDurationUseCase,
     required this.addCountUseCase,
     required this.getActivityTotalUseCase,
+    required this.clearAllDataUseCase,
     required this.timerService,
   });
 
@@ -60,16 +63,75 @@ class ActivityController extends ChangeNotifier {
   bool _isLoading = false;
   StreamSubscription? _tickSubscription;
   final Map<String, double> _countsTotalCache = {};
+  String _searchQuery = '';
 
   bool get isLoading => _isLoading;
+  String get searchQuery => _searchQuery;
 
-  /// Returns sorted root activities
+  set searchQuery(String query) {
+    _searchQuery = query.toLowerCase();
+    notifyListeners();
+  }
+
+  int _getStatusPriority(ActivityStatus status) {
+    switch (status) {
+      case ActivityStatus.running:
+        return 0;
+      case ActivityStatus.paused:
+        return 1;
+      case ActivityStatus.idle:
+        return 2;
+      case ActivityStatus.completed:
+        return 3;
+    }
+  }
+
+  ActivityStatus _getEffectiveStatus(Activity a) {
+    if (a.status == ActivityStatus.running) return ActivityStatus.running;
+
+    ActivityStatus best = a.status;
+    for (final childId in a.childrenIds) {
+      final child = _activitiesMap[childId];
+      if (child != null) {
+        final childStatus = _getEffectiveStatus(child);
+        if (_getStatusPriority(childStatus) < _getStatusPriority(best)) {
+          best = childStatus;
+        }
+      }
+    }
+    return best;
+  }
+
+  int _compareActivities(Activity a, Activity b) {
+    final pA = _getStatusPriority(_getEffectiveStatus(a));
+    final pB = _getStatusPriority(_getEffectiveStatus(b));
+    if (pA != pB) return pA.compareTo(pB);
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  }
+
+  bool _matchesSearch(Activity a) {
+    if (_searchQuery.isEmpty) return true;
+    if (a.name.toLowerCase().contains(_searchQuery)) return true;
+    if (a.parentId != null) {
+      final parent = _activitiesMap[a.parentId];
+      if (parent != null && parent.name.toLowerCase().contains(_searchQuery)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Returns sorted root activities (or global search results if searching)
   List<Activity> get roots =>
-      _activitiesMap.values.where((a) => a.parentId == null).toList()..sort((a, b) => a.name.compareTo(b.name));
+      _activitiesMap.values
+          .where((a) => _searchQuery.isEmpty ? a.parentId == null : true)
+          .where(_matchesSearch)
+          .toList()
+        ..sort(_compareActivities);
 
-  /// Returns pinned activities
+  /// Returns pinned activities (optionally filtered by search)
   List<Activity> get pinnedActivities =>
-      _activitiesMap.values.where((a) => a.isPinned).toList()..sort((a, b) => a.name.compareTo(b.name));
+      _activitiesMap.values.where((a) => a.isPinned).where(_matchesSearch).toList()..sort(_compareActivities);
 
   /// Exposed for fast lookup in Selectors
   Map<String, Activity> get activitiesMap => _activitiesMap;
@@ -212,6 +274,11 @@ class ActivityController extends ChangeNotifier {
 
   Future<void> addCount(String id, double value) async {
     await addCountUseCase.execute(id, value);
+    await loadActivities();
+  }
+
+  Future<void> clearAllData() async {
+    await clearAllDataUseCase.execute();
     await loadActivities();
   }
 

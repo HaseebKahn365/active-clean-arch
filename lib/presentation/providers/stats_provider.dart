@@ -17,8 +17,17 @@ class StatsController extends ChangeNotifier {
     loadData();
   }
 
+  DateTime? _lastReloadTime;
+
   void _onActivityUpdate() {
-    if (!_isLoading) {
+    // Always notify so the "live" calculation in metrics (like getFocusTimeByDay) can update the graph visuals
+    notifyListeners();
+
+    if (_isLoading) return;
+
+    final now = DateTime.now();
+    // Throttle silent reloads from DB to every 10 seconds
+    if (_lastReloadTime == null || now.difference(_lastReloadTime!) > const Duration(seconds: 10)) {
       loadData(silent: true);
     }
   }
@@ -62,6 +71,7 @@ class StatsController extends ChangeNotifier {
       _events = results[1] as List<ActivityEvent>;
       _countRecords = results[2] as List<CountRecord>;
       _hasData = true;
+      _lastReloadTime = DateTime.now();
       _clearCache();
     } catch (e) {
       debugPrint('Error loading stats data: $e');
@@ -102,11 +112,11 @@ class StatsController extends ChangeNotifier {
 
   /// Returns daily focus time map, grouped by range-specific granularity
   Map<DateTime, int> getFocusTimeByDay() {
-    final cacheKey = 'focus_time_by_day_${_selectedRange.name}';
+    final cacheKey = 'focus_time_by_day_extended_${_selectedRange.name}';
     if (_cache.containsKey(cacheKey)) return _cache[cacheKey];
 
     final now = DateTime.now();
-    final start = _getStartTime(now);
+    final start = _getDataStartTime(now);
     final map = <DateTime, int>{};
 
     // Initialize with all time slots in range to avoid gaps
@@ -289,6 +299,21 @@ class StatsController extends ChangeNotifier {
     }
   }
 
+  DateTime _getDataStartTime(DateTime now) {
+    switch (_selectedRange) {
+      case TimeRange.day:
+        return DateTime(now.year, now.month, now.day).subtract(const Duration(days: 3));
+      case TimeRange.week:
+        return DateTime(now.year, now.month, now.day).subtract(const Duration(days: 30));
+      case TimeRange.month:
+        return DateTime(now.year, now.month, now.day).subtract(const Duration(days: 120));
+      case TimeRange.year:
+        return DateTime(now.year, now.month, 1).subtract(const Duration(days: 365 * 2));
+      case TimeRange.forever:
+        return _getStartTime(now);
+    }
+  }
+
   List<DateTime> _generateTimeSlots(DateTime start, DateTime end) {
     final slots = <DateTime>[];
     DateTime current = start;
@@ -381,11 +406,11 @@ class StatsController extends ChangeNotifier {
   }
 
   Map<DateTime, int> getActivityTrend(String activityId) {
-    final cacheKey = 'activity_trend_${activityId}_${_selectedRange.name}';
+    final cacheKey = 'activity_trend_extended_${activityId}_${_selectedRange.name}';
     if (_cache.containsKey(cacheKey)) return _cache[cacheKey];
 
     final now = DateTime.now();
-    final start = _getStartTime(now);
+    final start = _getDataStartTime(now);
     final map = <DateTime, int>{};
 
     final slots = _generateTimeSlots(start, now);
@@ -404,9 +429,6 @@ class StatsController extends ChangeNotifier {
 
     final currentActivity = activityController.activitiesMap[activityId];
     if (currentActivity?.status == ActivityStatus.running && currentActivity?.startedAt != null) {
-      // For live data, we don't cache since it changes every second
-      // However, for the initial trend fetch, we'll return the base map + live delta
-      // but NOT store the live-augmented map in persistent cache
       final slot = _mapToSlot(now);
       if (map.containsKey(slot)) {
         map[slot] = (map[slot] ?? 0) + now.difference(currentActivity!.startedAt!).inSeconds;

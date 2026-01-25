@@ -125,4 +125,13 @@ class SqlActivityRepository implements ActivityRepository {
     final db = await sqliteService.database;
     await db.delete('count_records', where: 'id = ?', whereArgs: [id]);
   }
+
+  @override
+  Future<void> clearAllData() async {
+    debugPrint('SQL_SAVE: IMMEDIATE | Clear All Data');
+    final db = await sqliteService.database;
+    await db.delete('activities');
+    await db.delete('activity_events');
+    await db.delete('count_records');
+  }
 }

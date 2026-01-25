@@ -25,24 +25,17 @@ class TimeAxisFormatter {
     }
   }
 
-  static double getInterval(int dataLength, TimeRange range) {
-    if (dataLength <= 0) return 1.0;
+  static double getInterval(double windowSize, TimeRange range) {
+    if (windowSize <= 0) return 1.0;
 
-    switch (range) {
-      case TimeRange.day:
-        return 4.0; // Every 4 hours (24/4 = 6 labels)
-      case TimeRange.week:
-        return 1.0; // Every day (7 labels)
-      case TimeRange.month:
-        // Month has ~30 slots (days)
-        return 7.0; // Weekly ticks (4-5 labels)
-      case TimeRange.year:
-        // Year has 12 slots (months)
-        return 2.0; // Every 2 months (6 labels)
-      case TimeRange.forever:
-        if (dataLength > 12) return (dataLength / 6).ceilToDouble();
-        return 1.0;
-    }
+    // Adjust interval based on how many units are visible
+    if (windowSize <= 2) return 0.25; // Quarter units if zoomed in a lot
+    if (windowSize <= 5) return 0.5;
+    if (windowSize <= 14) return 1.0;
+    if (windowSize <= 35) return 7.0;
+    if (windowSize <= 100) return 14.0;
+
+    return (windowSize / 5).ceilToDouble();
   }
 
   static String getTooltipDateFormat(DateTime date, TimeRange range) {

@@ -140,6 +140,7 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                _buildParentName(context),
                                 Row(
                                   children: [
                                     Expanded(
@@ -322,6 +323,28 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
       return widget.activity.type == ActivityType.timeBased ? "TIMER" : "COUNTER";
     }
     return widget.activity.type == ActivityType.timeBased ? "TIMING" : "COUNTING";
+  }
+
+  Widget _buildParentName(BuildContext context) {
+    final controller = context.read<ActivityController>();
+    if (controller.searchQuery.isEmpty || widget.activity.parentId == null) {
+      return const SizedBox.shrink();
+    }
+    final parent = controller.activitiesMap[widget.activity.parentId];
+    if (parent == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Text(
+        parent.name.toUpperCase(),
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w900,
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
   }
 
   Color _getStatusColor(BuildContext context) {

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/backup_provider.dart';
 import '../../providers/activity_manager_provider.dart';
+import '../../providers/stats_provider.dart';
 
 class BackupPage extends StatefulWidget {
   const BackupPage({super.key});
@@ -92,6 +93,85 @@ class _BackupPageState extends State<BackupPage> {
           Text(
             'Backups are stored securely in the cloud. You can restore your data at any time.',
             style: TextStyle(color: colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: () => _showClearDataDialog(context),
+            icon: const Icon(Icons.delete_forever, color: Colors.red),
+            label: const Text('Clear All Data', style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showClearDataDialog(BuildContext context) {
+    final TextEditingController confirmController = TextEditingController();
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Confirm Deletion'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This action is IRREVERSIBLE. All your activities, events, and records will be deleted forever.',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Text('To confirm, type "haseeb" below:', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: confirmController,
+              decoration: const InputDecoration(hintText: 'Type haseeb here', border: OutlineInputBorder()),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: confirmController,
+            builder: (context, value, child) {
+              final bool isConfirmed = value.text.toLowerCase() == 'haseeb';
+              return ElevatedButton(
+                onPressed: isConfirmed
+                    ? () async {
+                        Navigator.pop(dialogContext);
+                        final activityController = context.read<ActivityController>();
+                        final statsController = context.read<StatsController>();
+                        try {
+                          await activityController.clearAllData();
+                          await statsController.loadData();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(const SnackBar(content: Text('All data has been cleared.')));
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text('Failed to clear data: $e')));
+                          }
+                        }
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isConfirmed ? Colors.red : null,
+                  foregroundColor: isConfirmed ? Colors.white : null,
+                ),
+                child: const Text('Clear Everything'),
+              );
+            },
           ),
         ],
       ),
