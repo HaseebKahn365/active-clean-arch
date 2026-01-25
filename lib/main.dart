@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +11,9 @@ import 'presentation/providers/sync_provider.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/backup_provider.dart';
 import 'presentation/providers/stats_provider.dart';
+import 'infrastructure/notifications/notification_service.dart';
+import 'application/services/background_service.dart';
+import 'presentation/pages/activity_detail_page.dart';
 
 import 'presentation/theme/app_theme.dart';
 import 'presentation/pages/auth/sign_in_page.dart';
@@ -23,6 +27,12 @@ Future<void> main() async {
 
   // Initialize Dependency Injection
   await di.init();
+
+  // Initialize Notification Service
+  await di.sl<NotificationService>().init();
+
+  // Initialize Background Service
+  await BackgroundServiceInstance.initialize();
 
   // Initialize Firebase infrastructure
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -52,8 +62,31 @@ Future<void> main() async {
 
 final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
-class ActiveApp extends StatelessWidget {
+class ActiveApp extends StatefulWidget {
   const ActiveApp({super.key});
+
+  @override
+  State<ActiveApp> createState() => _ActiveAppState();
+}
+
+class _ActiveAppState extends State<ActiveApp> {
+  StreamSubscription? _notificationSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationSubscription = di.sl<NotificationService>().onResponse.listen((payload) {
+      if (payload != null && payload.isNotEmpty) {
+        _navigatorKey.currentState?.pushNamed(payload);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +107,10 @@ class ActiveApp extends StatelessWidget {
         if (settings.name?.startsWith('/stats/activity/') ?? false) {
           final id = settings.name!.replaceFirst('/stats/activity/', '');
           return MaterialPageRoute(builder: (context) => ActivityStatsPage(activityId: id));
+        }
+        if (settings.name?.startsWith('/activity/') ?? false) {
+          final id = settings.name!.replaceFirst('/activity/', '');
+          return MaterialPageRoute(builder: (context) => ActivityDetailPage(activityId: id));
         }
         return null;
       },

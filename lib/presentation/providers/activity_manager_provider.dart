@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:active/application/services/activity_timer_service.dart';
+import 'package:active/infrastructure/notifications/notification_service.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/activity.dart';
 import '../../domain/use_cases/activity/get_activities_use_case.dart';
@@ -38,6 +40,7 @@ class ActivityController extends ChangeNotifier {
   final ClearAllDataUseCase clearAllDataUseCase;
 
   final ActivityTimerService timerService;
+  final NotificationService notificationService;
 
   ActivityController({
     required this.getActivitiesUseCase,
@@ -57,7 +60,16 @@ class ActivityController extends ChangeNotifier {
     required this.getActivityTotalUseCase,
     required this.clearAllDataUseCase,
     required this.timerService,
-  });
+    required this.notificationService,
+  }) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      FlutterBackgroundService().on('update').listen((event) {
+        if (event != null) {
+          notifyListeners();
+        }
+      });
+    }
+  }
 
   Map<String, Activity> _activitiesMap = {};
   bool _isLoading = false;
@@ -149,8 +161,66 @@ class ActivityController extends ChangeNotifier {
       debugPrint('Error loading activities: $e');
     } finally {
       await _refreshCounts();
+      _updateBackgroundState();
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  void _updateBackgroundState() async {
+    final running = _activitiesMap.values.where((a) => a.status == ActivityStatus.running).toList();
+
+    bool isRunning = false;
+    FlutterBackgroundService? service;
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      service = FlutterBackgroundService();
+      isRunning = await service.isRunning();
+    }
+
+    // Cancel existing goal notifications for all activities to prevent duplicates/stale ones
+    for (final a in _activitiesMap.values) {
+      if (a.goalSeconds > 0) {
+        await notificationService.cancelNotification(a.id.hashCode);
+      }
+    }
+
+    if (running.isNotEmpty) {
+      if (!isRunning && service != null) {
+        await service.startService();
+      }
+      // Schedule goal notifications for all currently running
+      for (final a in running) {
+        _scheduleGoalNotification(a);
+      }
+    } else {
+      if (isRunning && service != null) {
+        service.invoke("stopService");
+      }
+      // Clear running notification for macOS/Mobile when nothing is running
+      await notificationService.cancelNotification(888);
+    }
+  }
+
+  void _scheduleGoalNotification(Activity a) {
+    if (a.goalSeconds > 0) {
+      final currentTotal = getEffectiveSeconds(a.id);
+      final remaining = a.goalSeconds - currentTotal;
+      if (remaining > 0) {
+        final hours = a.goalSeconds ~/ 3600;
+        final minutes = (a.goalSeconds % 3600) ~/ 60;
+        final seconds = a.goalSeconds % 60;
+        final timeStr =
+            '${hours > 0 ? '$hours:' : ''}${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+        notificationService.scheduleGoalNotification(
+          id: a.id.hashCode,
+          title: 'Goal Reached: ${a.name}',
+          body: 'Target of $timeStr reached!',
+          scheduledDate: DateTime.now().add(Duration(seconds: remaining)),
+          payload: '/activity/${a.id}',
+        );
+      }
     }
   }
 

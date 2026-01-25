@@ -5,6 +5,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../infrastructure/database/sqlite_service.dart';
 import '../../infrastructure/auth/google_auth_service.dart';
+import '../../infrastructure/notifications/notification_service.dart';
 import '../../domain/repositories/activity_repository.dart';
 import '../../domain/repositories/sync_repository.dart';
 import '../../data/repositories/sync_repository_impl.dart';
@@ -57,6 +58,7 @@ Future<void> init() async {
 
   // Services
   sl.registerLazySingleton(() => ActivityTimerService());
+  sl.registerLazySingleton(() => NotificationService());
 
   // Presentation / State Management
   sl.registerLazySingleton(() => AppAuthProvider(sl()));
@@ -79,6 +81,7 @@ Future<void> init() async {
       getActivityTotalUseCase: sl(),
       clearAllDataUseCase: sl(),
       timerService: sl(),
+      notificationService: sl(),
     ),
   );
   sl.registerLazySingleton(() => SyncController(activityRepository: sl(), syncRepository: sl(), connectivity: sl()));
