@@ -2,7 +2,6 @@ import 'package:active/domain/entities/activity.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/activity_manager_provider.dart';
-import '../../activity_detail_page.dart';
 
 class PinnedActivityList extends StatelessWidget {
   const PinnedActivityList({super.key});

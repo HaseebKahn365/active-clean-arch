@@ -1,10 +1,8 @@
 import 'package:active/presentation/widgets/activity_details_sheet.dart';
-import '../../activity_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../domain/entities/activity.dart';
 import '../../../providers/activity_manager_provider.dart';
-import '../../stats/activity_stats_page.dart';
 
 class ActivityTile extends StatefulWidget {
   final Activity activity;

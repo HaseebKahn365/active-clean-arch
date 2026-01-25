@@ -41,6 +41,34 @@ class NotificationService {
         _onResponse.add(details.payload);
       },
     );
+
+    // Create Notification Channels for Android
+    final androidPlugin = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          channelId,
+          channelName,
+          description: channelDescription,
+          importance: Importance.low,
+          showBadge: false,
+          playSound: false,
+          enableVibration: false,
+        ),
+      );
+
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          goalChannelId,
+          goalChannelName,
+          description: goalChannelDescription,
+          importance: Importance.high,
+          playSound: true,
+          enableVibration: true,
+        ),
+      );
+    }
   }
 
   void dispose() {

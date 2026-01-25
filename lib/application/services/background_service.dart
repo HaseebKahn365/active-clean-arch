@@ -58,51 +58,55 @@ class BackgroundServiceInstance {
 
     // Timer loop
     Timer.periodic(const Duration(seconds: 1), (timer) async {
-      if (service is AndroidServiceInstance) {
-        if (!(await service.isForegroundService())) {
+      try {
+        if (service is AndroidServiceInstance) {
+          if (!(await service.isForegroundService())) {
+            return;
+          }
+        }
+
+        final activities = await repository.getAllActivities();
+        final running = activities.where((a) => a.status == ActivityStatus.running).toList();
+
+        if (running.isEmpty) {
+          if (service is AndroidServiceInstance) {
+            service.setForegroundNotificationInfo(title: "Active", content: "No active project");
+          }
           return;
         }
-      }
 
-      final activities = await repository.getAllActivities();
-      final running = activities.where((a) => a.status == ActivityStatus.running).toList();
+        // Update notification for the first running activity (or aggregate)
+        final primary = running.first;
+        if (primary.startedAt == null) return;
 
-      if (running.isEmpty) {
+        final now = DateTime.now();
+        final delta = now.difference(primary.startedAt!).inSeconds;
+        final totalSeconds = primary.totalSeconds + delta;
+
+        final hours = totalSeconds ~/ 3600;
+        final minutes = (totalSeconds % 3600) ~/ 60;
+        final seconds = totalSeconds % 60;
+
+        final timeStr =
+            '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
         if (service is AndroidServiceInstance) {
-          service.setForegroundNotificationInfo(title: "Active", content: "No active project");
+          service.setForegroundNotificationInfo(title: "Tracking: ${primary.name}", content: "Elapsed: $timeStr");
         }
-        return;
-      }
 
-      // Update notification for the first running activity (or aggregate)
-      final primary = running.first;
-      final now = DateTime.now();
-      final delta = now.difference(primary.startedAt!).inSeconds;
-      final totalSeconds = primary.totalSeconds + delta;
+        // Send update back to UI if needed
+        service.invoke('update', {"id": primary.id, "seconds": totalSeconds});
 
-      final hours = totalSeconds ~/ 3600;
-      final minutes = (totalSeconds % 3600) ~/ 60;
-      final seconds = totalSeconds % 60;
-
-      final timeStr =
-          '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-
-      if (service is AndroidServiceInstance) {
-        service.setForegroundNotificationInfo(title: "Tracking: ${primary.name}", content: "Elapsed: $timeStr");
-      }
-
-      // Send update back to UI if needed
-      service.invoke('update', {"id": primary.id, "seconds": totalSeconds});
-
-      // Periodic persistence in background
-      if (timer.tick % 10 == 0) {
-        for (final a in running) {
-          final d = now.difference(a.startedAt!).inSeconds;
-          // Note: To avoid complex logic here, we just use a simplified version of checkpoint
-          // In a real app, we'd want to call the use case, but we are in a separate isolate.
-          // For now, let's just update the DB directly via repository.
-          await repository.saveActivity(a.copyWith(totalSeconds: a.totalSeconds + d, startedAt: () => now));
+        // Periodic persistence in background
+        if (timer.tick % 10 == 0) {
+          for (final a in running) {
+            if (a.startedAt == null) continue;
+            final d = now.difference(a.startedAt!).inSeconds;
+            await repository.saveActivity(a.copyWith(totalSeconds: a.totalSeconds + d, startedAt: () => now));
+          }
         }
+      } catch (e) {
+        debugPrint('Error in background timer: $e');
       }
     });
   }

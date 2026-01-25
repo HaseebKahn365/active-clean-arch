@@ -187,7 +187,11 @@ class ActivityController extends ChangeNotifier {
 
     if (running.isNotEmpty) {
       if (!isRunning && service != null) {
-        await service.startService();
+        try {
+          await service.startService();
+        } catch (e) {
+          debugPrint('Critical: Could not start background service: $e');
+        }
       }
       // Schedule goal notifications for all currently running
       for (final a in running) {

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -25,17 +27,17 @@ import 'presentation/widgets/mac_swipe_back_navigator.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Dependency Injection
+  // 1. Firebase must be initialized before any Firebase services are accessed
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // 2. Initialize Dependency Injection
   await di.init();
 
-  // Initialize Notification Service
+  // 3. Initialize Notification Service (now includes channel creation)
   await di.sl<NotificationService>().init();
 
-  // Initialize Background Service
+  // 4. Initialize Background Service Configuration
   await BackgroundServiceInstance.initialize();
-
-  // Initialize Firebase infrastructure
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
     MultiProvider(
@@ -75,11 +77,24 @@ class _ActiveAppState extends State<ActiveApp> {
   @override
   void initState() {
     super.initState();
+    _requestNotificationPermission();
     _notificationSubscription = di.sl<NotificationService>().onResponse.listen((payload) {
       if (payload != null && payload.isNotEmpty) {
         _navigatorKey.currentState?.pushNamed(payload);
       }
     });
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    if (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) {
+      // Use permission_handler or flutter_local_notifications to request
+      final notifications = di.sl<NotificationService>();
+      // The init() already happened in main(), so we just need to make sure permissions are granted
+      // For Android 13+, we need to request POST_NOTIFICATIONS
+      final androidPlugin = FlutterLocalNotificationsPlugin()
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      await androidPlugin?.requestNotificationsPermission();
+    }
   }
 
   @override
