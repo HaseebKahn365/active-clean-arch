@@ -12,7 +12,6 @@ class ActivityEvent extends Equatable {
   final String? newParentId;
   final int? oldDuration;
   final int? newDuration;
-  final bool isSynced;
 
   const ActivityEvent({
     required this.id,
@@ -25,7 +24,6 @@ class ActivityEvent extends Equatable {
     this.newParentId,
     this.oldDuration,
     this.newDuration,
-    this.isSynced = false,
   });
 
   @override
@@ -40,6 +38,5 @@ class ActivityEvent extends Equatable {
     newParentId,
     oldDuration,
     newDuration,
-    isSynced,
   ];
 }

@@ -12,8 +12,6 @@ abstract class ActivityRepository {
   Future<void> updateActivity(Activity activity, {SaveReason reason = SaveReason.immediate});
   Future<void> saveEvent(ActivityEvent event);
   Future<List<ActivityEvent>> getAllEvents();
-  Future<List<ActivityEvent>> getUnsyncedEvents();
-  Future<void> markEventAsSynced(String id);
 
   // Count Records
   Future<void> saveCountRecord(CountRecord record);

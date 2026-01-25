@@ -7,8 +7,6 @@ import '../../infrastructure/database/sqlite_service.dart';
 import '../../infrastructure/auth/google_auth_service.dart';
 import '../../infrastructure/notifications/notification_service.dart';
 import '../../domain/repositories/activity_repository.dart';
-import '../../domain/repositories/sync_repository.dart';
-import '../../data/repositories/sync_repository_impl.dart';
 import '../../data/repositories/sql_activity_repository.dart';
 import '../../domain/use_cases/activity/get_breadcrumbs_use_case.dart';
 import '../../domain/use_cases/activity/get_activities_use_case.dart';
@@ -35,7 +33,6 @@ import '../../presentation/providers/backup_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../presentation/providers/activity_manager_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
-import '../../presentation/providers/sync_provider.dart';
 import '../../presentation/providers/theme_provider.dart';
 import '../../presentation/providers/stats_provider.dart';
 import '../../application/services/activity_timer_service.dart';
@@ -84,7 +81,7 @@ Future<void> init() async {
       notificationService: sl(),
     ),
   );
-  sl.registerLazySingleton(() => SyncController(activityRepository: sl(), syncRepository: sl(), connectivity: sl()));
+
   sl.registerLazySingleton(
     () => BackupController(
       createBackupUseCase: sl(),
@@ -120,6 +117,6 @@ Future<void> init() async {
 
   // Repository
   sl.registerLazySingleton<ActivityRepository>(() => SqlActivityRepository(sl()));
-  sl.registerLazySingleton<SyncRepository>(() => SyncRepositoryImpl(sl()));
+
   sl.registerLazySingleton<BackupRepository>(() => BackupRepositoryImpl(sl(), sl()));
 }

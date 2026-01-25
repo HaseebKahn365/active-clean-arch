@@ -2,7 +2,6 @@ import 'package:active/presentation/providers/activity_manager_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/sync_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../theme/app_color_schemes.dart';
 import 'widgets/activity_list.dart';
@@ -129,7 +128,7 @@ class _DashboardPageState extends State<DashboardPage> {
             onPressed: _toggleSearch,
           ),
         IconButton(
-          icon: Icon(Icons.cloud_sync_outlined, color: colorScheme.onPrimary),
+          icon: Icon(Icons.cloud_upload_outlined, color: colorScheme.onPrimary),
           onPressed: () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupPage()));
           },
@@ -179,26 +178,22 @@ class _DashboardPageState extends State<DashboardPage> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Consumer<SyncController>(
-                                  builder: (context, sync, _) {
-                                    return Row(
-                                      children: [
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            color: sync.isSyncing ? Colors.orange : Colors.greenAccent,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          sync.isSyncing ? 'Syncing...' : 'Cloud Synced',
-                                          style: TextStyle(color: colorScheme.onPrimary.withAlpha(200), fontSize: 12),
-                                        ),
-                                      ],
-                                    );
-                                  },
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.greenAccent,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Local Mode (Backup Only)',
+                                      style: TextStyle(color: colorScheme.onPrimary.withAlpha(200), fontSize: 12),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

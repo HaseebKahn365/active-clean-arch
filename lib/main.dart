@@ -9,7 +9,6 @@ import 'firebase_options.dart';
 import 'core/di/injection_container.dart' as di;
 import 'presentation/providers/activity_manager_provider.dart';
 import 'presentation/providers/auth_provider.dart';
-import 'presentation/providers/sync_provider.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/backup_provider.dart';
 import 'presentation/providers/stats_provider.dart';
@@ -44,15 +43,7 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => di.sl<AppAuthProvider>()),
         ChangeNotifierProvider(create: (_) => di.sl<ActivityController>()..loadActivities()),
-        ChangeNotifierProxyProvider<AppAuthProvider, SyncController>(
-          create: (_) => di.sl<SyncController>(),
-          update: (_, auth, sync) {
-            if (sync != null) {
-              sync.init(auth.userId);
-            }
-            return sync!;
-          },
-        ),
+
         ChangeNotifierProvider(create: (_) => di.sl<ThemeProvider>()),
         ChangeNotifierProvider(create: (_) => di.sl<BackupController>()),
         ChangeNotifierProvider(create: (_) => di.sl<StatsController>()..loadData()),

@@ -72,7 +72,6 @@ class SqlActivityRepository implements ActivityRepository {
       newParentId: event.newParentId,
       oldDuration: event.oldDuration,
       newDuration: event.newDuration,
-      isSynced: event.isSynced,
     );
     await db.insert('activity_events', model.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
   }
@@ -82,19 +81,6 @@ class SqlActivityRepository implements ActivityRepository {
     final db = await sqliteService.database;
     final maps = await db.query('activity_events');
     return maps.map((map) => ActivityEventModel.fromMap(map)).toList();
-  }
-
-  @override
-  Future<List<ActivityEvent>> getUnsyncedEvents() async {
-    final db = await sqliteService.database;
-    final maps = await db.query('activity_events', where: 'is_synced = 0');
-    return maps.map((map) => ActivityEventModel.fromMap(map)).toList();
-  }
-
-  @override
-  Future<void> markEventAsSynced(String id) async {
-    final db = await sqliteService.database;
-    await db.update('activity_events', {'is_synced': 1}, where: 'id = ?', whereArgs: [id]);
   }
 
   @override

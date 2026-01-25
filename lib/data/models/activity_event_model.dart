@@ -13,7 +13,6 @@ class ActivityEventModel extends ActivityEvent {
     super.newParentId,
     super.oldDuration,
     super.newDuration,
-    super.isSynced,
   });
 
   factory ActivityEventModel.fromMap(Map<String, dynamic> map) {
@@ -28,7 +27,6 @@ class ActivityEventModel extends ActivityEvent {
       newParentId: map['new_parent_id'] as String?,
       oldDuration: map['old_duration'] as int?,
       newDuration: map['new_duration'] as int?,
-      isSynced: (map['is_synced'] as int) == 1,
     );
   }
 
@@ -44,7 +42,6 @@ class ActivityEventModel extends ActivityEvent {
       'new_parent_id': newParentId,
       'old_duration': oldDuration,
       'new_duration': newDuration,
-      'is_synced': isSynced ? 1 : 0,
     };
   }
 }

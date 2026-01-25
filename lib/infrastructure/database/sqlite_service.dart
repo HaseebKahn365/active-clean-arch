@@ -17,7 +17,7 @@ class SqliteService {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 2, onCreate: _createDB, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 3, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -52,7 +52,6 @@ class SqliteService {
           new_parent_id TEXT,
           old_duration INTEGER,
           new_duration INTEGER,
-          is_synced INTEGER NOT NULL DEFAULT 0,
           FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE
         );
       ''');
@@ -66,6 +65,16 @@ class SqliteService {
           FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE
         );
       ''');
+    }
+
+    if (oldVersion < 3) {
+      // Clean up sync related columns if they exist
+      try {
+        await db.execute('ALTER TABLE activity_events DROP COLUMN is_synced');
+      } catch (e) {
+        // DROP COLUMN might not be supported on older SQLite versions on Android
+        // We can just ignore it as the model doesn't use it anymore
+      }
     }
   }
 
@@ -110,7 +119,6 @@ class SqliteService {
         new_parent_id TEXT,
         old_duration INTEGER,
         new_duration INTEGER,
-        is_synced INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (activity_id) REFERENCES activities (id) ON DELETE CASCADE
       );
     ''');

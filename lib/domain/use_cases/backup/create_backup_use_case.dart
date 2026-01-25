@@ -39,7 +39,6 @@ class CreateBackupUseCase {
                             newParentId: e.newParentId,
                             oldDuration: e.oldDuration,
                             newDuration: e.newDuration,
-                            isSynced: e.isSynced,
                           ))
                     .toMap(),
           )
