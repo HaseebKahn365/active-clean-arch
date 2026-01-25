@@ -146,6 +146,9 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
 
     final minutes = focusDuration.inMinutes % 60;
 
+    final priorityGoal = stats.getPriorityGoalProgress();
+    final modificationCount = stats.getTodayModificationCount();
+
     return GridView.count(
       crossAxisCount: crossAxisCount,
       shrinkWrap: true,
@@ -162,8 +165,14 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
           Theme.of(context).colorScheme.primary,
         ),
         _buildStatCard(context, 'Daily Average', _calculateDailyAvg(stats), Icons.auto_graph_rounded, Colors.orange),
-        _buildStatCard(context, 'Goal Progress', '85%', Icons.flag_rounded, colorScheme.secondary),
-        _buildStatCard(context, 'Active Streak', '12 Days', Icons.local_fire_department_rounded, Colors.redAccent),
+        _buildStatCard(
+          context,
+          'Goal Progress',
+          priorityGoal != null ? '${(priorityGoal.value * 100).toInt()}% (${priorityGoal.key})' : 'No Active Goal',
+          Icons.flag_rounded,
+          colorScheme.secondary,
+        ),
+        _buildStatCard(context, 'Today\'s Activity', '$modificationCount Modified', Icons.bolt_rounded, Colors.amber),
       ],
     );
   }

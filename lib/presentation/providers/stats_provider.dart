@@ -261,6 +261,75 @@ class StatsController extends ChangeNotifier {
     return result;
   }
 
+  /// Returns unique activity IDs modified today
+  int getTodayModificationCount() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
+    final modifiedIds = <String>{};
+
+    for (final e in _events) {
+      if (e.timestamp.isAfter(todayStart)) {
+        modifiedIds.add(e.activityId);
+      }
+    }
+
+    for (final r in _countRecords) {
+      if (r.timestamp.isAfter(todayStart)) {
+        modifiedIds.add(r.activityId);
+      }
+    }
+
+    // Include currently running status
+    for (final a in activityController.activitiesMap.values) {
+      if (a.status == ActivityStatus.running) {
+        modifiedIds.add(a.id);
+      }
+    }
+
+    return modifiedIds.length;
+  }
+
+  /// Returns (Activity Name, Progress Percentage 0.0-1.0)
+  MapEntry<String, double>? getPriorityGoalProgress() {
+    // 1. Priority: Running time-based activity with a goal
+    final runningTimeWithGoal = activityController.activitiesMap.values
+        .where((a) => a.status == ActivityStatus.running && a.type == ActivityType.timeBased && a.goalSeconds > 0)
+        .toList();
+
+    if (runningTimeWithGoal.isNotEmpty) {
+      runningTimeWithGoal.sort((a, b) => (b.startedAt ?? DateTime(0)).compareTo(a.startedAt ?? DateTime(0)));
+      final a = runningTimeWithGoal.first;
+      final current = activityController.getEffectiveSeconds(a.id);
+      return MapEntry(a.name, (current / a.goalSeconds).clamp(0.0, 1.0));
+    }
+
+    // 2. Priority: Most recently updated count-based activity with a goal
+    final countWithGoal = _activities.where((a) => a.type == ActivityType.countBased && a.goalSeconds > 0).toList();
+
+    if (countWithGoal.isNotEmpty) {
+      countWithGoal.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      final a = countWithGoal.first;
+      final totalCount = activityController.getCountTotalFor(a.id);
+      return MapEntry(a.name, (totalCount / a.goalSeconds).clamp(0.0, 1.0));
+    }
+
+    // 3. Fallback: Any last modified activity with a goal (e.g. paused time-based)
+    final allWithGoal = _activities.where((a) => a.goalSeconds > 0).toList();
+    if (allWithGoal.isEmpty) return null;
+
+    allWithGoal.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final a = allWithGoal.first;
+
+    if (a.type == ActivityType.timeBased) {
+      final current = activityController.getEffectiveSeconds(a.id);
+      return MapEntry(a.name, (current / a.goalSeconds).clamp(0.0, 1.0));
+    } else {
+      final totalCount = activityController.getCountTotalFor(a.id);
+      return MapEntry(a.name, (totalCount / a.goalSeconds).clamp(0.0, 1.0));
+    }
+  }
+
   // --- INTERNAL HELPERS ---
 
   String _getRootName(Activity activity) {
