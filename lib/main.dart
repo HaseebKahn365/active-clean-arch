@@ -106,11 +106,17 @@ class _ActiveAppState extends State<ActiveApp> {
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/stats/activity/') ?? false) {
           final id = settings.name!.replaceFirst('/stats/activity/', '');
-          return MaterialPageRoute(builder: (context) => ActivityStatsPage(activityId: id));
+          return MaterialPageRoute(
+            builder: (context) => ActivityStatsPage(activityId: id),
+            settings: settings,
+          );
         }
         if (settings.name?.startsWith('/activity/') ?? false) {
           final id = settings.name!.replaceFirst('/activity/', '');
-          return MaterialPageRoute(builder: (context) => ActivityDetailPage(activityId: id));
+          return MaterialPageRoute(
+            builder: (context) => ActivityDetailPage(activityId: id),
+            settings: settings,
+          );
         }
         return null;
       },

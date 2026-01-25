@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'helpers/time_axis_formatter.dart';
 import '../../widgets/interactive_line_chart.dart';
 import '../../widgets/interactive_bar_chart.dart';
+import '../../theme/app_colors.dart';
 
 class GlobalStatsPage extends StatefulWidget {
   const GlobalStatsPage({super.key});
@@ -157,13 +158,7 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
       crossAxisSpacing: 16,
       childAspectRatio: 2.0,
       children: [
-        _buildStatCard(
-          context,
-          'Total Focus',
-          '${hours}h ${minutes}m',
-          Icons.timer_rounded,
-          Theme.of(context).colorScheme.primary,
-        ),
+        _buildStatCard(context, 'Total Focus', '${hours}h ${minutes}m', Icons.timer_rounded, colorScheme.primary),
         _buildStatCard(context, 'Daily Average', _calculateDailyAvg(stats), Icons.auto_graph_rounded, Colors.orange),
         _buildStatCard(
           context,
@@ -191,9 +186,9 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.05),
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.1)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -376,14 +371,14 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
 
     final total = distribution.values.fold(0, (sum, v) => sum + v);
 
-    final colors = [colorScheme.primary, Colors.orange, colorScheme.secondary, Colors.purpleAccent, Colors.cyan];
+    final colors = AppColors.chartPalette;
 
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.05),
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.1)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -481,9 +476,9 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.05),
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.1)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -580,9 +575,9 @@ class _GlobalStatsPageState extends State<GlobalStatsPage> {
       margin: const EdgeInsets.only(right: 16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.05),
+        color: colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.1)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

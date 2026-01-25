@@ -29,7 +29,7 @@ class _MacSwipeBackNavigatorState extends State<MacSwipeBackNavigator> {
   bool _tracking = false;
 
   void _handle(PointerEvent event) {
-    if (MacSwipeBackNavigator.isBlocked) {
+    if (MacSwipeBackNavigator.isBlocked || !_isAllowedRoute()) {
       _reset();
       return;
     }
@@ -78,6 +78,26 @@ class _MacSwipeBackNavigatorState extends State<MacSwipeBackNavigator> {
     setState(() {});
   }
 
+  bool _isAllowedRoute() {
+    final nav = widget.navigatorKey?.currentState;
+    if (nav == null) return false;
+
+    String? currentRouteName;
+    nav.popUntil((route) {
+      currentRouteName = route.settings.name;
+      return true;
+    });
+
+    if (currentRouteName == null) return false;
+
+    // Allowed Routes: Stats (Global & Activity) and Activity Details
+    if (currentRouteName == '/stats/global') return true;
+    if (currentRouteName!.startsWith('/stats/activity/')) return true;
+    if (currentRouteName!.startsWith('/activity/')) return true;
+
+    return false;
+  }
+
   bool _canPop() {
     final nav = widget.navigatorKey?.currentState ?? Navigator.maybeOf(context);
     return nav != null && nav.canPop();
@@ -86,7 +106,7 @@ class _MacSwipeBackNavigatorState extends State<MacSwipeBackNavigator> {
   void _triggerBack() {
     final nav = widget.navigatorKey?.currentState ?? Navigator.maybeOf(context);
     if (nav != null && nav.canPop()) {
-      nav.pop();
+      nav.maybePop();
     }
   }
 
@@ -149,11 +169,16 @@ class _BackOverlay extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Color.lerp(
-                colorScheme.surfaceContainerHighest.withOpacity(0.55),
-                colorScheme.primary.withOpacity(0.95),
+                colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+                colorScheme.primary.withValues(alpha: 0.95),
                 progress >= 1.0 ? 1.0 : 0.0,
               ),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.16 * scale), blurRadius: 18 * scale)],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.16 * scale),
+                  blurRadius: 18 * scale,
+                ),
+              ],
             ),
             child: Icon(
               Icons.arrow_back_ios_new_rounded,

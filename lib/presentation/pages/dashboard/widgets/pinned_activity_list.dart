@@ -82,7 +82,7 @@ class PinnedActivityList extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
         onTap: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => ActivityDetailPage(activityId: activity.id)));
+          Navigator.pushNamed(context, '/activity/${activity.id}');
         },
         child: Container(
           decoration: BoxDecoration(

@@ -1,3 +1,4 @@
+import 'package:active/presentation/widgets/mac_swipe_back_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/activity.dart';
@@ -169,25 +170,35 @@ class _Breadcrumbs extends StatelessWidget {
         if (!snapshot.hasData) return const SizedBox.shrink();
         final breadcrumbs = snapshot.data!;
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(right: 24),
-          child: Row(
-            children: [
-              _breadcrumbItem(context, 'Home', null, isLink: true),
-              ...breadcrumbs.map((a) {
-                final isLast = a.id == currentId;
-                return Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Icon(Icons.chevron_right, size: 16, color: colorScheme.onSurfaceVariant.withAlpha(100)),
-                    ),
-                    _breadcrumbItem(context, a.name, a.id, isLink: !isLast),
-                  ],
-                );
-              }),
-            ],
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is ScrollStartNotification) {
+              MacSwipeBackNavigator.isBlocked = true;
+            } else if (notification is ScrollEndNotification) {
+              MacSwipeBackNavigator.isBlocked = false;
+            }
+            return false;
+          },
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(right: 24),
+            child: Row(
+              children: [
+                _breadcrumbItem(context, 'Home', null, isLink: true),
+                ...breadcrumbs.map((a) {
+                  final isLast = a.id == currentId;
+                  return Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Icon(Icons.chevron_right, size: 16, color: colorScheme.onSurfaceVariant.withAlpha(100)),
+                      ),
+                      _breadcrumbItem(context, a.name, a.id, isLink: !isLast),
+                    ],
+                  );
+                }),
+              ],
+            ),
           ),
         );
       },

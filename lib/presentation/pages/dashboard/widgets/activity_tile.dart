@@ -113,10 +113,7 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                 onTap: dragging || widget.onTap != null
                     ? widget.onTap
                     : () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => ActivityDetailPage(activityId: widget.activity.id)),
-                        );
+                        Navigator.pushNamed(context, '/activity/${widget.activity.id}');
                       },
                 child: Padding(
                   padding: const EdgeInsets.only(left: 18, right: 12, top: 12, bottom: 12),
@@ -186,10 +183,7 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
                           IconButton(
                             icon: Icon(Icons.bar_chart_rounded, color: colorScheme.primary, size: 20),
                             onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => ActivityStatsPage(activityId: widget.activity.id)),
-                              );
+                              Navigator.pushNamed(context, '/stats/activity/${widget.activity.id}');
                             },
                           ),
                           _buildMoreMenu(context),
