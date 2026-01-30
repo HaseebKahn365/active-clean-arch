@@ -19,12 +19,12 @@ class MacSwipeBackNavigator extends StatefulWidget {
 class _MacSwipeBackNavigatorState extends State<MacSwipeBackNavigator> {
   double _dragDistance = 0;
 
-  static const double _commitDistance = 360.0;
+  static const double _commitDistance = 7000.0;
   static const double _visualDeadZone = 24.0;
   static const double _maxVerticalTolerance = 80.0;
 
   static const double _forwardResistance = 0.55;
-  static const double _reverseResistance = 1.4; // ← EASY CANCEL
+  static const double _reverseResistance = 2.4; // ← EASY CANCEL
 
   bool _tracking = false;
 
