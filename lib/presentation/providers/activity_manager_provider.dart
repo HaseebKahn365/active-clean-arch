@@ -80,6 +80,8 @@ class ActivityController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String get searchQuery => _searchQuery;
 
+  bool get hasRunningActivity => _activitiesMap.values.any((a) => a.status == ActivityStatus.running);
+
   set searchQuery(String query) {
     _searchQuery = query.toLowerCase();
     notifyListeners();

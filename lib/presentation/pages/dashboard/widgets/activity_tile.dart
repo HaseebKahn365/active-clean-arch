@@ -14,8 +14,9 @@ class ActivityTile extends StatefulWidget {
   State<ActivityTile> createState() => _ActivityTileState();
 }
 
-class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderStateMixin {
+class _ActivityTileState extends State<ActivityTile> with TickerProviderStateMixin {
   late AnimationController _controller;
+  late AnimationController _activeController;
   late Animation<double> _scaleAnimation;
 
   @override
@@ -29,11 +30,36 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
       value: 1.0,
     );
     _scaleAnimation = _controller;
+
+    _activeController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+      value: (DateTime.now().millisecondsSinceEpoch % 12000) / 12000.0,
+    );
+
+    if (widget.activity.status == ActivityStatus.running) {
+      _activeController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(ActivityTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.activity.status == ActivityStatus.running) {
+      if (!_activeController.isAnimating) {
+        _activeController.repeat();
+      }
+    } else {
+      if (_activeController.isAnimating) {
+        _activeController.stop();
+      }
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _activeController.dispose();
     super.dispose();
   }
 
@@ -73,153 +99,221 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
 
   Widget _buildBody(BuildContext context, {bool isHighlighted = false, bool dragging = false}) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isRunning = widget.activity.status == ActivityStatus.running;
 
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: isHighlighted ? colorScheme.primaryContainer : Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(24),
-          border: isHighlighted
-              ? Border.all(color: colorScheme.primary, width: 2)
-              : (Theme.of(context).cardTheme.shape is RoundedRectangleBorder
-                    ? Border.fromBorderSide((Theme.of(context).cardTheme.shape as RoundedRectangleBorder).side)
-                    : null),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10)),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            children: [
-              // Positioned(
-              //   left: 0,
-              //   top: 0,
-              //   bottom: 0,
-              //   width: 6,
-              //   child: Container(
-              //     color: widget.activity.type == ActivityType.timeBased ? colorScheme.primary : const Color(0xFF10B981),
-              //   ),
-              // ),
-              InkWell(
-                borderRadius: BorderRadius.circular(24),
-                onTapDown: dragging ? null : _onTapDown,
-                onTapUp: dragging ? null : _onTapUp,
-                onTapCancel: dragging ? null : _onTapCancel,
-                onTap: dragging || widget.onTap != null
-                    ? widget.onTap
-                    : () {
-                        Navigator.pushNamed(context, '/activity/${widget.activity.id}');
-                      },
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 18, right: 12, top: 12, bottom: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Top Row: Status, Name, Type Icon, Badge, More
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(context).withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(_getStatusIcon(), color: _getStatusColor(context), size: 18),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildParentName(context),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        widget.activity.name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  _getStatusLabel(),
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (widget.activity.childrenIds.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${widget.activity.childrenIds.length}',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colorScheme.primary),
-                              ),
-                            ),
-                          ],
-                          IconButton(
-                            icon: Icon(Icons.bar_chart_rounded, color: colorScheme.primary, size: 20),
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/stats/activity/${widget.activity.id}');
-                            },
-                          ),
-                          _buildMoreMenu(context),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // Middle Section: Metrics
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          if (widget.activity.type == ActivityType.timeBased) ...[
-                            _DurationText(activityId: widget.activity.id, isProminent: true),
-                            _CumulativeDurationText(activityId: widget.activity.id),
-                            if (widget.activity.goalSeconds > 0) _GoalBadge(goalSeconds: widget.activity.goalSeconds),
-                          ] else ...[
-                            _CountText(activityId: widget.activity.id, isProminent: true),
-                            _DurationText(activityId: widget.activity.id),
-                            _CumulativeDurationText(activityId: widget.activity.id),
-                          ],
-                        ],
-                      ),
-                      // Bottom Section: Actions (Only if not dragging)
-                      if (!dragging) ...[
-                        const SizedBox(height: 12),
-                        const Divider(height: 1),
-                        const SizedBox(height: 8),
-                        _buildActions(context),
-                      ],
-                    ],
-                  ),
-                ),
+    return AnimatedScale(
+      scale: isRunning ? 1.02 : 1.0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: isHighlighted ? colorScheme.primaryContainer : Theme.of(context).cardTheme.color,
+            borderRadius: BorderRadius.circular(24),
+            border: isRunning
+                ? Border.all(color: colorScheme.primary.withValues(alpha: 0.5), width: 2.5)
+                : isHighlighted
+                ? Border.all(color: colorScheme.primary, width: 2)
+                : (Theme.of(context).cardTheme.shape is RoundedRectangleBorder
+                      ? Border.fromBorderSide((Theme.of(context).cardTheme.shape as RoundedRectangleBorder).side)
+                      : null),
+            boxShadow: [
+              if (isRunning)
+                BoxShadow(color: colorScheme.primary.withValues(alpha: 0.25), blurRadius: 40, spreadRadius: 4),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isRunning ? 0.12 : 0.06),
+                blurRadius: isRunning ? 20 : 12,
+                offset: Offset(0, isRunning ? 10 : 6),
               ),
             ],
           ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Stack(
+              children: [
+                if (isRunning) ...[
+                  // 1. Ambient Glow & 2. Energy Flow (Animated Gradient)
+                  Positioned.fill(
+                    child: AnimatedBuilder(
+                      animation: _activeController,
+                      builder: (context, child) {
+                        return CustomPaint(
+                          painter: _ActiveBackgroundPainter(
+                            animation: _activeController,
+                            primaryColor: colorScheme.primary,
+                            secondaryColor: colorScheme.primaryContainer,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // 3. Directional Light Sweep
+                  Positioned.fill(
+                    child: AnimatedBuilder(
+                      animation: _activeController,
+                      builder: (context, child) {
+                        return CustomPaint(
+                          painter: _LightSweepPainter(
+                            animation: _activeController,
+                            color: colorScheme.primary.withValues(alpha: 0.2),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+                InkWell(
+                  borderRadius: BorderRadius.circular(24),
+                  onTapDown: dragging ? null : _onTapDown,
+                  onTapUp: dragging ? null : _onTapUp,
+                  onTapCancel: dragging ? null : _onTapCancel,
+                  onTap: dragging || widget.onTap != null
+                      ? widget.onTap
+                      : () {
+                          Navigator.pushNamed(context, '/activity/${widget.activity.id}');
+                        },
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 18, right: 12, top: 12, bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Top Row: Status, Name, Type Icon, Badge, More
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            _buildStatusIcon(context, isRunning),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildParentName(context),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          widget.activity.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: isRunning ? FontWeight.w900 : FontWeight.bold,
+                                            color: isRunning ? colorScheme.primary : colorScheme.onSurface,
+                                            letterSpacing: isRunning ? -0.2 : 0,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    _getStatusLabel(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.8,
+                                      color: isRunning
+                                          ? colorScheme.primary.withValues(alpha: 0.8)
+                                          : colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (widget.activity.childrenIds.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${widget.activity.childrenIds.length}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            IconButton(
+                              icon: Icon(Icons.bar_chart_rounded, color: colorScheme.primary, size: 20),
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/stats/activity/${widget.activity.id}');
+                              },
+                            ),
+                            _buildMoreMenu(context),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Middle Section: Metrics
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (widget.activity.type == ActivityType.timeBased) ...[
+                              _DurationText(activityId: widget.activity.id, isProminent: true),
+                              _CumulativeDurationText(activityId: widget.activity.id),
+                              if (widget.activity.goalSeconds > 0) _GoalBadge(goalSeconds: widget.activity.goalSeconds),
+                            ] else ...[
+                              _CountText(activityId: widget.activity.id, isProminent: true),
+                              _DurationText(activityId: widget.activity.id),
+                              _CumulativeDurationText(activityId: widget.activity.id),
+                            ],
+                          ],
+                        ),
+                        // Bottom Section: Actions (Only if not dragging)
+                        if (!dragging) ...[
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 8),
+                          _buildActions(context),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildStatusIcon(BuildContext context, bool isRunning) {
+    if (isRunning) {
+      return AnimatedBuilder(
+        animation: _activeController,
+        builder: (context, child) {
+          final scale = 1.0 + (0.05 * (0.5 - (0.5 - _activeController.value % 0.5).abs()));
+          return Transform.scale(
+            scale: scale,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _getStatusColor(context).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _getStatusColor(context).withValues(alpha: 0.3), width: 1),
+              ),
+              child: Icon(_getStatusIcon(), color: _getStatusColor(context), size: 18),
+            ),
+          );
+        },
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: _getStatusColor(context).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(_getStatusIcon(), color: _getStatusColor(context), size: 18),
     );
   }
 
@@ -365,6 +459,86 @@ class _ActivityTileState extends State<ActivityTile> with SingleTickerProviderSt
         return Icons.radio_button_unchecked_rounded;
     }
   }
+}
+
+class _ActiveBackgroundPainter extends CustomPainter {
+  final Animation<double> animation;
+  final Color primaryColor;
+  final Color secondaryColor;
+
+  _ActiveBackgroundPainter({required this.animation, required this.primaryColor, required this.secondaryColor})
+    : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final t = animation.value;
+
+    // 1. Ambient Morphing Gradient (Primary Energy)
+    final center1 = Alignment(
+      0.6 * (0.5 - (0.5 - t).abs()) * 2, // Wider horizontal drift
+      0.3 * (0.5 - (0.5 - (t + 0.3) % 1.0).abs()) * 2, // vertical oscillation
+    );
+
+    final gradient1 = RadialGradient(
+      center: center1,
+      radius: 1.8 + 0.4 * (0.5 - (0.5 - t).abs()),
+      colors: [primaryColor.withValues(alpha: 0.18), secondaryColor.withValues(alpha: 0.08), Colors.transparent],
+      stops: const [0.0, 0.4, 1.0],
+    );
+
+    // 2. Secondary Core Pulse (Heat/Energy)
+    final center2 = Alignment(
+      -0.4 * (0.5 - (0.5 - (t + 0.5) % 1.0).abs()) * 2,
+      -0.2 * (0.5 - (0.5 - (t + 0.8) % 1.0).abs()) * 2,
+    );
+
+    final gradient2 = RadialGradient(
+      center: center2,
+      radius: 1.2,
+      colors: [primaryColor.withValues(alpha: 0.1), Colors.transparent],
+    );
+
+    canvas.drawRect(rect, Paint()..shader = gradient1.createShader(rect));
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = gradient2.createShader(rect)
+        ..blendMode = BlendMode.screen,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ActiveBackgroundPainter oldDelegate) => true;
+}
+
+class _LightSweepPainter extends CustomPainter {
+  final Animation<double> animation;
+  final Color color;
+
+  _LightSweepPainter({required this.animation, required this.color}) : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final t = animation.value;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+
+    // Diagonal sweep
+    final progress = t * 2.0; // Two cycles of sweep per animation cycle
+    final x = size.width * (progress % 1.0);
+
+    final path = Path();
+    path.moveTo(x - 50, -50);
+    path.lineTo(x + 50, size.height + 50);
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_LightSweepPainter oldDelegate) => true;
 }
 
 class _CumulativeDurationText extends StatelessWidget {
