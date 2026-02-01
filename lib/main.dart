@@ -15,6 +15,9 @@ import 'presentation/providers/stats_provider.dart';
 import 'infrastructure/notifications/notification_service.dart';
 import 'application/services/background_service.dart';
 import 'presentation/pages/activity_detail_page.dart';
+import 'data/migrations/event_compression_migration.dart';
+import 'domain/repositories/activity_repository.dart';
+import 'infrastructure/database/sqlite_service.dart';
 
 import 'presentation/theme/app_theme.dart';
 import 'presentation/pages/auth/sign_in_page.dart';
@@ -31,6 +34,10 @@ Future<void> main() async {
 
   // 2. Initialize Dependency Injection
   await di.init();
+
+  // 2.1 Run Event Compression Migration
+  final migration = EventCompressionMigration(di.sl<ActivityRepository>(), di.sl<SqliteService>());
+  await migration.run();
 
   // 3. Initialize Notification Service (now includes channel creation)
   await di.sl<NotificationService>().init();
