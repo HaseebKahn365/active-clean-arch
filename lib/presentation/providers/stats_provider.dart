@@ -26,8 +26,8 @@ class StatsController extends ChangeNotifier {
     if (_isLoading) return;
 
     final now = DateTime.now();
-    // Throttle silent reloads from DB to every 10 seconds
-    if (_lastReloadTime == null || now.difference(_lastReloadTime!) > const Duration(seconds: 10)) {
+    // Throttle silent reloads from DB to every 1 second
+    if (_lastReloadTime == null || now.difference(_lastReloadTime!) > const Duration(seconds: 1)) {
       loadData(silent: true);
     }
   }
@@ -288,6 +288,104 @@ class StatsController extends ChangeNotifier {
     }
 
     return modifiedIds.length;
+  }
+
+  /// Returns total focus time (seconds) for today
+  int getTodayFocusTime() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day);
+
+    int total = _events.where((e) => e.timestamp.isAfter(start)).fold(0, (sum, e) => sum + e.durationDelta);
+
+    for (final activity in activityController.activitiesMap.values) {
+      if (activity.status == ActivityStatus.running && activity.startedAt != null) {
+        final activityStart = activity.startedAt!;
+        if (activityStart.isAfter(start)) {
+          total += now.difference(activityStart).inSeconds;
+        } else {
+          total += now.difference(start).inSeconds;
+        }
+      }
+    }
+    return total;
+  }
+
+  /// Returns total count-based actions completed today
+  double getTodayCounts() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    return _countRecords
+        .where((r) => r.timestamp.isAfter(todayStart))
+        .fold(0.0, (sum, r) => sum + r.value);
+  }
+
+  /// Returns total number of activities completed today
+  int getTodayDoneCount() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
+    return _events
+        .where((e) => e.timestamp.isAfter(todayStart) && e.nextStatus == ActivityStatus.completed)
+        .map((e) => e.activityId)
+        .toSet()
+        .length;
+  }
+
+  /// Returns a map of Activity Name -> Total Seconds spent today
+  Map<String, int> getTodayActivityTimeBreakdown() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final breakdown = <String, int>{};
+
+    // 1. From persisted events today
+    for (final event in _events) {
+      if (event.timestamp.isAfter(todayStart)) {
+        final activity = activityController.activitiesMap[event.activityId];
+        if (activity != null) {
+          breakdown[activity.name] = (breakdown[activity.name] ?? 0) + event.durationDelta;
+        }
+      }
+    }
+
+    // 2. From currently running activities
+    for (final activity in activityController.activitiesMap.values) {
+      if (activity.status == ActivityStatus.running && activity.startedAt != null) {
+        final activityStart = activity.startedAt!;
+        int delta = 0;
+        if (activityStart.isAfter(todayStart)) {
+          delta = now.difference(activityStart).inSeconds;
+        } else {
+          delta = now.difference(todayStart).inSeconds;
+        }
+        breakdown[activity.name] = (breakdown[activity.name] ?? 0) + delta;
+      }
+    }
+
+    return breakdown;
+  }
+
+  /// Returns all count records from today
+  List<CountRecord> getTodayCountRecords() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    return _countRecords.where((r) => r.timestamp.isAfter(todayStart)).toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  }
+
+  /// Returns all activities completed today
+  List<Activity> getTodayCompletedActivities() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+
+    final completedIds = _events
+        .where((e) => e.timestamp.isAfter(todayStart) && e.nextStatus == ActivityStatus.completed)
+        .map((e) => e.activityId)
+        .toSet();
+
+    return completedIds
+        .map((id) => activityController.activitiesMap[id])
+        .whereType<Activity>()
+        .toList();
   }
 
   /// Returns (Activity Name, Progress Percentage 0.0-1.0)

@@ -12,6 +12,8 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/backup_provider.dart';
 import 'presentation/providers/stats_provider.dart';
+import 'presentation/providers/pause_provider.dart';
+import 'presentation/providers/quote_provider.dart';
 import 'infrastructure/notifications/notification_service.dart';
 import 'application/services/background_service.dart';
 import 'presentation/pages/activity_detail_page.dart';
@@ -53,7 +55,9 @@ Future<void> main() async {
 
         ChangeNotifierProvider(create: (_) => di.sl<ThemeProvider>()),
         ChangeNotifierProvider(create: (_) => di.sl<BackupController>()),
+        ChangeNotifierProvider(create: (_) => di.sl<PauseProvider>()),
         ChangeNotifierProvider(create: (_) => di.sl<StatsController>()..loadData()),
+        ChangeNotifierProvider(create: (_) => di.sl<QuoteProvider>()),
       ],
       child: const ActiveApp(),
     ),
@@ -85,8 +89,6 @@ class _ActiveAppState extends State<ActiveApp> {
 
   Future<void> _requestNotificationPermission() async {
     if (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS) {
-      // Use permission_handler or flutter_local_notifications to request
-      final notifications = di.sl<NotificationService>();
       // The init() already happened in main(), so we just need to make sure permissions are granted
       // For Android 13+, we need to request POST_NOTIFICATIONS
       final androidPlugin = FlutterLocalNotificationsPlugin()

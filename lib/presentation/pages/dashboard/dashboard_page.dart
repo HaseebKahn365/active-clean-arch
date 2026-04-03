@@ -8,6 +8,8 @@ import 'widgets/activity_list.dart';
 import 'widgets/pinned_activity_list.dart';
 import 'widgets/create_activity_sheet.dart';
 import '../backup/backup_page.dart';
+import '../../widgets/glowing_quote_text.dart';
+import 'widgets/productivity_containers.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -89,7 +91,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SliverAppBar(
-      expandedHeight: _isSearching ? 120 : 200,
+      expandedHeight: _isSearching ? 120 : 300,
       pinned: true,
       centerTitle: false,
       backgroundColor: colorScheme.primary,
@@ -199,6 +201,8 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        const ProductivityContainers(),
                       ],
                     ),
                   ),
