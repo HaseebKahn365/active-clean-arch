@@ -18,7 +18,9 @@ class TreeLayoutNode {
 
 class TreeLayoutEngine {
   static const double nodeWidth = 200;
-  static const double nodeHeight = 100;
+  static const double cardHeight = 80;   // card body height
+  static const double toggleHeight = 36; // toggle button area below card
+  static const double nodeHeight = cardHeight + toggleHeight; // total node height
   static const double horizontalGap = 60;
   static const double verticalGap = 160;
 
@@ -73,6 +75,8 @@ class TreeLayoutEngine {
     void assignPositions(TreeLayoutNode node, double startX, int depth) {
       node.y = depth * verticalGap;
       node.x = startX + (node.subtreeWidth / 2);
+      // Edges connect from bottom of card, not bottom of full node height
+      // (handled in TreePainter via cardHeight)
 
       if (expandedNodes.contains(node.activity.id)) {
         double currentX = startX;

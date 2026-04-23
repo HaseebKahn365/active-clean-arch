@@ -13,8 +13,10 @@ class ActivityTree extends ConsumerStatefulWidget {
   ConsumerState<ActivityTree> createState() => _ActivityTreeState();
 }
 
-class _ActivityTreeState extends ConsumerState<ActivityTree> with SingleTickerProviderStateMixin {
-  final TransformationController _transformationController = TransformationController();
+class _ActivityTreeState extends ConsumerState<ActivityTree>
+    with SingleTickerProviderStateMixin {
+  final TransformationController _transformationController =
+      TransformationController();
   late AnimationController _animationController;
 
   @override
@@ -28,8 +30,12 @@ class _ActivityTreeState extends ConsumerState<ActivityTree> with SingleTickerPr
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final uiState = ref.read(dashboardUiProvider);
       if (uiState.expandedNodeIds.isEmpty) {
-        final activities = ref.read(activityControllerProvider).activitiesMap.values.toList();
-        final roots = activities.where((a) => a.parentId == null).map((a) => a.id).toSet();
+        final activities =
+            ref.read(activityControllerProvider).activitiesMap.values.toList();
+        final roots = activities
+            .where((a) => a.parentId == null)
+            .map((a) => a.id)
+            .toSet();
         ref.read(dashboardUiProvider.notifier).setExpandedNodes(roots);
       }
     });
@@ -45,21 +51,66 @@ class _ActivityTreeState extends ConsumerState<ActivityTree> with SingleTickerPr
   void _zoom(double factor) {
     final Matrix4 matrix = _transformationController.value.clone();
     final double currentScale = matrix.getMaxScaleOnAxis();
-    final double newScale = (currentScale * factor).clamp(0.4, 2.5);
+    final double newScale = (currentScale * factor).clamp(0.2, 3.0);
     final double scaleChange = newScale / currentScale;
-    
     final Size size = MediaQuery.of(context).size;
     final Offset center = Offset(size.width / 2, size.height / 2);
-    
     matrix.leftTranslate(center.dx, center.dy);
     matrix.scale(scaleChange);
     matrix.leftTranslate(-center.dx, -center.dy);
-    
     _transformationController.value = matrix;
   }
 
-  void _resetZoom() {
-    _transformationController.value = Matrix4.identity();
+  void _resetZoom() => _transformationController.value = Matrix4.identity();
+
+  bool _isNodeVisible(TreeLayoutNode node, Set<String> expandedNodes,
+      Map<String, TreeLayoutNode> layout) {
+    if (node.activity.parentId == null) return true;
+    final parent = layout[node.activity.parentId];
+    if (parent == null) return false;
+    if (!expandedNodes.contains(parent.activity.id)) return false;
+    return _isNodeVisible(parent, expandedNodes, layout);
+  }
+
+  bool _isDescendant(String targetId, String potentialParentId,
+      Map<String, TreeLayoutNode> layout) {
+    final target = layout[targetId];
+    if (target == null || target.activity.parentId == null) return false;
+    if (target.activity.parentId == potentialParentId) return true;
+    return _isDescendant(target.activity.parentId!, potentialParentId, layout);
+  }
+
+  void _handleDetach(String nodeId) {
+    ref.read(activityControllerProvider.notifier).moveActivity(nodeId, null);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('Node detached to root'),
+          duration: Duration(seconds: 1)),
+    );
+  }
+
+  void _handleReparentAction(
+      String targetId, Map<String, TreeLayoutNode> layout) {
+    final uiState = ref.read(dashboardUiProvider);
+    final sourceId = uiState.reparentingNodeId!;
+
+    if (sourceId == targetId) {
+      ref.read(dashboardUiProvider.notifier).stopReparenting();
+      return;
+    }
+
+    if (_isDescendant(targetId, sourceId, layout)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Cannot move a node into its own subtree'),
+            duration: Duration(seconds: 2)),
+      );
+      ref.read(dashboardUiProvider.notifier).stopReparenting();
+      return;
+    }
+
+    ref.read(activityControllerProvider.notifier).moveActivity(sourceId, targetId);
+    ref.read(dashboardUiProvider.notifier).stopReparenting();
   }
 
   @override
@@ -72,24 +123,31 @@ class _ActivityTreeState extends ConsumerState<ActivityTree> with SingleTickerPr
       return const Center(child: Text('No activities to display.'));
     }
 
-    final layout = TreeLayoutEngine.calculateLayout(activities, uiState.expandedNodeIds);
+    final layout =
+        TreeLayoutEngine.calculateLayout(activities, uiState.expandedNodeIds);
+    final visibleNodes = layout.values
+        .where((n) => _isNodeVisible(n, uiState.expandedNodeIds, layout))
+        .toList();
 
     return AnimatedBuilder(
       animation: _animationController,
-      builder: (context, child) {
+      builder: (context, _) {
         return Stack(
           children: [
             GestureDetector(
-              onTapDown: (_) => ref.read(dashboardUiProvider.notifier).selectNode(null),
-              onPanUpdate: uiState.draggingNodeId != null ? _handleDragUpdate : null,
-              onPanEnd: uiState.draggingNodeId != null ? _handleDragEnd : null,
+              onTapDown: (_) {
+                if (uiState.reparentingNodeId != null) {
+                  ref.read(dashboardUiProvider.notifier).stopReparenting();
+                } else {
+                  ref.read(dashboardUiProvider.notifier).selectNode(null);
+                }
+              },
               child: InteractiveViewer(
                 transformationController: _transformationController,
                 constrained: false,
                 boundaryMargin: const EdgeInsets.all(5000),
-                minScale: 0.4,
-                maxScale: 2.5,
-                panEnabled: uiState.draggingNodeId == null,
+                minScale: 0.2,
+                maxScale: 3.0,
                 child: SizedBox(
                   width: 10000,
                   height: 10000,
@@ -104,29 +162,41 @@ class _ActivityTreeState extends ConsumerState<ActivityTree> with SingleTickerPr
                           animationValue: _animationController.value,
                         ),
                       ),
-                      ...layout.values.map((node) {
-                        final isVisible = _isNodeVisible(node, uiState.expandedNodeIds, layout);
-                        if (!isVisible) return const SizedBox.shrink();
-
-                        final isDragging = uiState.draggingNodeId == node.activity.id;
+                      ...visibleNodes.map((node) {
+                        final isReparenting =
+                            uiState.reparentingNodeId == node.activity.id;
 
                         return Positioned(
-                          left: isDragging 
-                              ? uiState.dragPosition!.dx - TreeLayoutEngine.nodeWidth / 2
-                              : node.x - TreeLayoutEngine.nodeWidth / 2,
-                          top: isDragging 
-                              ? uiState.dragPosition!.dy - TreeLayoutEngine.nodeHeight / 2
-                              : node.y,
+                          // Centre the node card on node.x
+                          left: node.x - TreeLayoutEngine.nodeWidth / 2,
+                          top: node.y,
                           width: TreeLayoutEngine.nodeWidth,
+                          // Height covers card + toggle area so hit-testing works
+                          height: TreeLayoutEngine.nodeHeight,
                           child: TreeNode(
                             node: node,
-                            isSelected: uiState.selectedNodeId == node.activity.id,
-                            isExpanded: uiState.expandedNodeIds.contains(node.activity.id),
-                            isDragging: isDragging,
-                            isHoverTarget: uiState.hoverTargetId == node.activity.id,
-                            onSelect: () => ref.read(dashboardUiProvider.notifier).selectNode(node.activity.id),
-                            onToggle: () => ref.read(dashboardUiProvider.notifier).toggleNodeExpansion(node.activity.id),
-                            onStartDrag: (pos) => ref.read(dashboardUiProvider.notifier).startDragging(node.activity.id, pos),
+                            isSelected:
+                                uiState.selectedNodeId == node.activity.id,
+                            isExpanded: uiState.expandedNodeIds
+                                .contains(node.activity.id),
+                            isReparenting: isReparenting,
+                            onSelect: () {
+                              if (uiState.reparentingNodeId != null) {
+                                _handleReparentAction(node.activity.id, layout);
+                              } else {
+                                ref
+                                    .read(dashboardUiProvider.notifier)
+                                    .selectNode(node.activity.id);
+                              }
+                            },
+                            onToggle: () => ref
+                                .read(dashboardUiProvider.notifier)
+                                .toggleNodeExpansion(node.activity.id),
+                            onDoubleTap: () => ref
+                                .read(dashboardUiProvider.notifier)
+                                .startReparenting(node.activity.id),
+                            onLongPress: () =>
+                                _handleDetach(node.activity.id),
                           ),
                         );
                       }),
@@ -140,6 +210,12 @@ class _ActivityTreeState extends ConsumerState<ActivityTree> with SingleTickerPr
               left: 24,
               child: DetailsPanel(selectedNodeId: uiState.selectedNodeId),
             ),
+            if (uiState.reparentingNodeId != null)
+              Positioned(
+                top: 24,
+                right: 24,
+                child: _buildReparentingBanner(),
+              ),
             Positioned(
               bottom: 24,
               right: 24,
@@ -155,152 +231,60 @@ class _ActivityTreeState extends ConsumerState<ActivityTree> with SingleTickerPr
     );
   }
 
-  void _handleDragUpdate(DragUpdateDetails details) {
-    final uiState = ref.read(dashboardUiProvider);
-    final layout = TreeLayoutEngine.calculateLayout(
-      ref.read(activityControllerProvider).activitiesMap.values.toList(),
-      uiState.expandedNodeIds,
+  Widget _buildReparentingBanner() {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.account_tree_outlined, color: Colors.white, size: 16),
+          const SizedBox(width: 8),
+          const Text('Select target node',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12)),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: () =>
+                ref.read(dashboardUiProvider.notifier).stopReparenting(),
+            child: const Icon(Icons.close, color: Colors.white, size: 16),
+          ),
+        ],
+      ),
     );
-
-    final RenderBox renderBox = context.findRenderObject() as RenderBox;
-    final Offset localPos = renderBox.globalToLocal(details.globalPosition);
-    final Matrix4 inverseMatrix = _transformationController.value.clone()..invert();
-    final Offset canvasPos = MatrixUtils.transformPoint(inverseMatrix, localPos);
-
-    String? hoverId;
-    for (final node in layout.values) {
-      if (node.activity.id == uiState.draggingNodeId) continue;
-      final double dx = (node.x - canvasPos.dx).abs();
-      final double dy = (node.y + TreeLayoutEngine.nodeHeight / 2 - canvasPos.dy).abs();
-      if (dx < TreeLayoutEngine.nodeWidth / 2 && dy < TreeLayoutEngine.nodeHeight / 2) {
-        if (!_isDescendant(node.activity.id, uiState.draggingNodeId!, layout)) {
-          hoverId = node.activity.id;
-          break;
-        }
-      }
-    }
-    ref.read(dashboardUiProvider.notifier).updateDrag(canvasPos, hoverId: hoverId);
-  }
-
-  bool _isDescendant(String targetId, String potentialParentId, Map<String, TreeLayoutNode> layout) {
-    final target = layout[targetId];
-    if (target == null || target.activity.parentId == null) return false;
-    if (target.activity.parentId == potentialParentId) return true;
-    return _isDescendant(target.activity.parentId!, potentialParentId, layout);
-  }
-
-  void _handleDragEnd(DragEndDetails details) {
-    final uiState = ref.read(dashboardUiProvider);
-    if (uiState.draggingNodeId != null && uiState.hoverTargetId != null) {
-      ref.read(activityControllerProvider.notifier).moveActivity(
-            uiState.draggingNodeId!,
-            uiState.hoverTargetId,
-          );
-    }
-    ref.read(dashboardUiProvider.notifier).stopDragging();
-  }
-
-  bool _isNodeVisible(TreeLayoutNode node, Set<String> expandedNodes, Map<String, TreeLayoutNode> layout) {
-    if (node.activity.parentId == null) return true;
-    final parent = layout[node.activity.parentId];
-    if (parent == null) return false;
-    if (!expandedNodes.contains(parent.activity.id)) return false;
-    return _isNodeVisible(parent, expandedNodes, layout);
   }
 }
 
-class TreePainter extends CustomPainter {
-  final Map<String, TreeLayoutNode> layout;
-  final Set<String> expandedNodes;
-  final ThemeData theme;
-  final double animationValue;
-
-  TreePainter({
-    required this.layout,
-    required this.expandedNodes,
-    required this.theme,
-    this.animationValue = 0.0,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-
-    for (final node in layout.values) {
-      if (!expandedNodes.contains(node.activity.id)) continue;
-      for (final child in node.children) {
-        final startX = node.x;
-        final startY = node.y + TreeLayoutEngine.nodeHeight;
-        final endX = child.x;
-        final endY = child.y;
-        final midY = (startY + endY) / 2;
-        final path = Path()
-          ..moveTo(startX, startY)
-          ..cubicTo(startX, midY, endX, midY, endX, endY);
-
-        final isActive = node.activity.status == ActivityStatus.running && child.activity.status == ActivityStatus.running;
-        paint.color = isActive ? theme.colorScheme.primary.withValues(alpha: 0.8) : theme.colorScheme.onSurface.withValues(alpha: 0.4);
-        paint.strokeWidth = isActive ? 4 : 2.5;
-        canvas.drawPath(path, paint);
-
-        if (isActive) {
-          final dashPath = _createAnimatedDashPath(path, animationValue);
-          final activePaint = Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 4.5
-            ..color = theme.colorScheme.primary;
-          canvas.drawPath(dashPath, activePaint);
-        }
-      }
-    }
-  }
-
-  Path _createAnimatedDashPath(Path source, double dashPhase) {
-    final path = Path();
-    final metrics = source.computeMetrics();
-    for (final metric in metrics) {
-      const dashLength = 10.0;
-      const gapLength = 10.0;
-      final step = dashLength + gapLength;
-      double start = (dashPhase * step) % step;
-      if (start > 0) start -= step;
-      for (double d = start; d < metric.length; d += step) {
-        final double s = math.max(0, d);
-        final double e = math.min(metric.length, d + dashLength);
-        if (s < e) path.addPath(metric.extractPath(s, e), Offset.zero);
-      }
-    }
-    return path;
-  }
-
-  @override
-  bool shouldRepaint(covariant TreePainter oldDelegate) {
-    return oldDelegate.layout != layout || oldDelegate.expandedNodes != expandedNodes || oldDelegate.animationValue != animationValue;
-  }
-}
-
+// ──────────────────────────────────────────────
+// TreeNode – Column layout so toggle is INSIDE bounds
+// ──────────────────────────────────────────────
 class TreeNode extends StatelessWidget {
   final TreeLayoutNode node;
   final bool isSelected;
   final bool isExpanded;
-  final bool isDragging;
-  final bool isHoverTarget;
+  final bool isReparenting;
   final VoidCallback onSelect;
   final VoidCallback onToggle;
-  final Function(Offset) onStartDrag;
+  final VoidCallback onDoubleTap;
+  final VoidCallback onLongPress;
 
   const TreeNode({
     super.key,
     required this.node,
     required this.isSelected,
     required this.isExpanded,
-    this.isDragging = false,
-    this.isHoverTarget = false,
+    this.isReparenting = false,
     required this.onSelect,
     required this.onToggle,
-    required this.onStartDrag,
+    required this.onDoubleTap,
+    required this.onLongPress,
   });
 
   @override
@@ -319,110 +303,199 @@ class TreeNode extends StatelessWidget {
     if (isRunning) {
       borderColor = colorScheme.primary.withValues(alpha: 0.5);
       bgColor = theme.cardColor;
-      boxShadow = [BoxShadow(color: colorScheme.primary.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2)];
+      boxShadow = [
+        BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            spreadRadius: 2)
+      ];
     } else if (isCompleted) {
       borderColor = colorScheme.secondary.withValues(alpha: 0.3);
       bgColor = colorScheme.secondary.withValues(alpha: 0.05);
       opacity = 0.7;
     }
 
-    return GestureDetector(
-      onTap: onSelect,
-      onDoubleTap: () => onStartDrag(Offset(node.x, node.y)),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isHoverTarget ? colorScheme.primary.withValues(alpha: 0.1) : bgColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isHoverTarget ? colorScheme.primary : (isSelected ? colorScheme.primary : borderColor),
-            width: (isSelected || isHoverTarget) ? 2 : 1,
-          ),
-          boxShadow: (isSelected || isDragging) ? [
-            BoxShadow(
-              color: colorScheme.primary.withValues(alpha: 0.3),
-              blurRadius: isDragging ? 30 : 10,
-              spreadRadius: isDragging ? 10 : 5,
-              offset: isDragging ? const Offset(0, 10) : Offset.zero,
-            )
-          ] : boxShadow,
-        ),
-        transform: isDragging ? (Matrix4.identity()..scale(1.1)) : Matrix4.identity(),
-        child: Opacity(
-          opacity: isDragging ? 0.6 : opacity,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned(
-                top: -20,
-                left: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(colorScheme, activity.status),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))],
-                  ),
-                  child: Icon(_getStatusIcon(activity.status), size: 12, color: Colors.white),
-                ),
+    if (isReparenting) {
+      borderColor = colorScheme.primary;
+      bgColor = colorScheme.primary.withValues(alpha: 0.1);
+    }
+
+    // The node is a Column:
+    //   [Card body — tappable for select/double-tap/long-press]
+    //   [Toggle button row — only shown if node has children]
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // ── Card body ──────────────────────────────
+        GestureDetector(
+          onTap: onSelect,
+          onDoubleTap: onDoubleTap,
+          onLongPress: onLongPress,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            height: TreeLayoutEngine.cardHeight,
+            padding: const EdgeInsets.fromLTRB(12, 20, 12, 10),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected || isReparenting
+                    ? colorScheme.primary
+                    : borderColor,
+                width: isSelected || isReparenting ? 2 : 1,
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              boxShadow: isSelected || isReparenting
+                  ? [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.3),
+                        blurRadius: isReparenting ? 20 : 10,
+                        spreadRadius: isReparenting ? 4 : 2,
+                      )
+                    ]
+                  : boxShadow,
+            ),
+            transform: isReparenting
+                ? (Matrix4.identity()..scale(1.05))
+                : Matrix4.identity(),
+            child: Opacity(
+              opacity: opacity,
+              child: Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  const SizedBox(height: 4),
-                  Text(activity.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: isRunning ? colorScheme.primary : theme.textTheme.bodyLarge?.color)),
-                  const SizedBox(height: 4),
-                  Row(
+                  // Status badge
+                  Positioned(
+                    top: -14,
+                    left: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: _statusColor(colorScheme, activity.status),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2))
+                        ],
+                      ),
+                      child: Icon(_statusIcon(activity.status),
+                          size: 12, color: Colors.white),
+                    ),
+                  ),
+                  // Content
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.access_time, size: 10, color: theme.hintColor),
-                      const SizedBox(width: 4),
-                      Text(_formatDuration(activity.totalSeconds), style: TextStyle(fontSize: 10, color: theme.hintColor, fontWeight: FontWeight.bold)),
-                      if (isRunning) ...[const Spacer(), Icon(Icons.bolt, size: 12, color: colorScheme.primary)],
+                      Text(
+                        activity.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: isRunning
+                              ? colorScheme.primary
+                              : theme.textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.access_time,
+                              size: 10, color: theme.hintColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatDuration(activity.totalSeconds),
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: theme.hintColor,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          if (isRunning) ...[
+                            const Spacer(),
+                            Icon(Icons.bolt,
+                                size: 12, color: colorScheme.primary),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
                 ],
               ),
-              if (node.children.isNotEmpty)
-                Positioned(
-                  bottom: -22,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: GestureDetector(
-                      onTap: onToggle,
-                      child: Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(color: theme.cardColor, shape: BoxShape.circle, border: Border.all(color: theme.dividerColor)),
-                        child: Icon(isExpanded ? Icons.expand_less : Icons.expand_more, size: 14),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
-      ),
+
+        // ── Toggle button ─ BELOW card, inside Column bounds ──
+        if (node.children.isNotEmpty)
+          SizedBox(
+            height: TreeLayoutEngine.toggleHeight,
+            child: Center(
+              child: GestureDetector(
+                // Stop tap propagating up to the canvas GestureDetector
+                onTap: () => onToggle(),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: theme.cardColor,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isExpanded
+                          ? colorScheme.primary
+                          : theme.dividerColor,
+                      width: 2,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 4,
+                          offset: Offset(0, 2))
+                    ],
+                  ),
+                  child: Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                    color:
+                        isExpanded ? colorScheme.primary : theme.hintColor,
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          // Keep height consistent for leaf nodes
+          SizedBox(height: TreeLayoutEngine.toggleHeight),
+      ],
     );
   }
 
-  Color _getStatusColor(ColorScheme colorScheme, ActivityStatus status) {
-    switch (status) {
-      case ActivityStatus.running: return colorScheme.primary;
-      case ActivityStatus.paused: return Colors.orange;
-      case ActivityStatus.completed: return colorScheme.secondary;
-      default: return colorScheme.outline;
+  Color _statusColor(ColorScheme cs, ActivityStatus s) {
+    switch (s) {
+      case ActivityStatus.running:
+        return cs.primary;
+      case ActivityStatus.paused:
+        return Colors.orange;
+      case ActivityStatus.completed:
+        return cs.secondary;
+      default:
+        return cs.outline;
     }
   }
 
-  IconData _getStatusIcon(ActivityStatus status) {
-    switch (status) {
-      case ActivityStatus.running: return Icons.bolt;
-      case ActivityStatus.paused: return Icons.pause;
-      case ActivityStatus.completed: return Icons.check;
-      default: return Icons.radio_button_unchecked;
+  IconData _statusIcon(ActivityStatus s) {
+    switch (s) {
+      case ActivityStatus.running:
+        return Icons.bolt;
+      case ActivityStatus.paused:
+        return Icons.pause;
+      case ActivityStatus.completed:
+        return Icons.check;
+      default:
+        return Icons.radio_button_unchecked;
     }
   }
 
@@ -434,72 +507,199 @@ class TreeNode extends StatelessWidget {
   }
 }
 
+// ──────────────────────────────────────────────
+// TreePainter
+// ──────────────────────────────────────────────
+class TreePainter extends CustomPainter {
+  final Map<String, TreeLayoutNode> layout;
+  final Set<String> expandedNodes;
+  final ThemeData theme;
+  final double animationValue;
+
+  TreePainter({
+    required this.layout,
+    required this.expandedNodes,
+    required this.theme,
+    this.animationValue = 0.0,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.stroke;
+
+    for (final node in layout.values) {
+      if (!expandedNodes.contains(node.activity.id)) continue;
+      for (final child in node.children) {
+        // Edge starts at bottom of CARD (not bottom of full nodeHeight)
+        final startX = node.x;
+        final startY = node.y + TreeLayoutEngine.cardHeight;
+        final endX = child.x;
+        final endY = child.y;
+        if (endX == 0 && endY == 0) continue;
+
+        final midY = (startY + endY) / 2;
+        final path = Path()
+          ..moveTo(startX, startY)
+          ..cubicTo(startX, midY, endX, midY, endX, endY);
+
+        final isActive = node.activity.status == ActivityStatus.running &&
+            child.activity.status == ActivityStatus.running;
+        paint.color = isActive
+            ? theme.colorScheme.primary.withValues(alpha: 0.8)
+            : theme.colorScheme.onSurface.withValues(alpha: 0.4);
+        paint.strokeWidth = isActive ? 4 : 2.5;
+        canvas.drawPath(path, paint);
+
+        if (isActive) {
+          final dashPath = _createAnimatedDashPath(path, animationValue);
+          canvas.drawPath(
+              dashPath,
+              Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 4.5
+                ..color = theme.colorScheme.primary);
+        }
+      }
+    }
+  }
+
+  Path _createAnimatedDashPath(Path source, double dashPhase) {
+    final path = Path();
+    for (final metric in source.computeMetrics()) {
+      const dash = 10.0, gap = 10.0;
+      final step = dash + gap;
+      double start = (dashPhase * step) % step;
+      if (start > 0) start -= step;
+      for (double d = start; d < metric.length; d += step) {
+        final s = math.max(0.0, d);
+        final e = math.min(metric.length, d + dash);
+        if (s < e) path.addPath(metric.extractPath(s, e), Offset.zero);
+      }
+    }
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(covariant TreePainter old) =>
+      old.layout != layout ||
+      old.expandedNodes != expandedNodes ||
+      old.animationValue != animationValue;
+}
+
+// ──────────────────────────────────────────────
+// DetailsPanel
+// ──────────────────────────────────────────────
 class DetailsPanel extends ConsumerWidget {
   final String? selectedNodeId;
   const DetailsPanel({super.key, this.selectedNodeId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     if (selectedNodeId == null) {
       return Container(
         width: 280,
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Theme.of(context).cardColor.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(24), border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1))),
-        child: const Text('Select a node to view details', style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
+        decoration: BoxDecoration(
+            color: theme.cardColor.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+                color: theme.dividerColor.withValues(alpha: 0.1))),
+        child: const Text('Select a node to view details',
+            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
       );
     }
-    final activity = ref.watch(activityControllerProvider).activitiesMap[selectedNodeId];
+    final activity =
+        ref.watch(activityControllerProvider).activitiesMap[selectedNodeId];
     if (activity == null) return const SizedBox.shrink();
-    final theme = Theme.of(context);
+
     final colorScheme = theme.colorScheme;
     return Container(
       width: 280,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: theme.cardColor.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(24), border: Border.all(color: theme.dividerColor.withValues(alpha: 0.1)), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20, offset: const Offset(0, 10))]),
+      decoration: BoxDecoration(
+          color: theme.cardColor.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(24),
+          border:
+              Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10))
+          ]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline, size: 14, color: colorScheme.primary),
-              const SizedBox(width: 8),
-              Text('EXPLORER DETAILS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 2, color: theme.hintColor)),
-            ],
-          ),
+          Row(children: [
+            Icon(Icons.info_outline, size: 14, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text('EXPLORER DETAILS',
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: theme.hintColor)),
+          ]),
           const Divider(height: 24),
-          Text(activity.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(activity.name,
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: _getStatusColor(colorScheme, activity.status).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _getStatusColor(colorScheme, activity.status).withValues(alpha: 0.3))),
-            child: Text(activity.status.name.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: _getStatusColor(colorScheme, activity.status))),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+                color: _statusColor(colorScheme, activity.status)
+                    .withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                    color: _statusColor(colorScheme, activity.status)
+                        .withValues(alpha: 0.3))),
+            child: Text(activity.status.name.toUpperCase(),
+                style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: _statusColor(colorScheme, activity.status))),
           ),
           const SizedBox(height: 20),
-          Row(children: [_buildStat(context, Icons.access_time, 'Duration', _formatDuration(activity.totalSeconds))]),
+          _stat(context, Icons.access_time, 'Duration',
+              _formatDuration(activity.totalSeconds)),
         ],
       ),
     );
   }
 
-  Widget _buildStat(BuildContext context, IconData icon, String label, String value) {
+  Widget _stat(
+      BuildContext context, IconData icon, String label, String value) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(children: [Icon(icon, size: 10, color: theme.hintColor), const SizedBox(width: 4), Text(label.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: theme.hintColor))]),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-      ],
-    );
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Icon(icon, size: 10, color: theme.hintColor),
+        const SizedBox(width: 4),
+        Text(label.toUpperCase(),
+            style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: theme.hintColor))
+      ]),
+      const SizedBox(height: 4),
+      Text(value,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+    ]);
   }
 
-  Color _getStatusColor(ColorScheme colorScheme, ActivityStatus status) {
-    switch (status) {
-      case ActivityStatus.running: return colorScheme.primary;
-      case ActivityStatus.paused: return Colors.orange;
-      case ActivityStatus.completed: return colorScheme.secondary;
-      default: return colorScheme.outline;
+  Color _statusColor(ColorScheme cs, ActivityStatus s) {
+    switch (s) {
+      case ActivityStatus.running:
+        return cs.primary;
+      case ActivityStatus.paused:
+        return Colors.orange;
+      case ActivityStatus.completed:
+        return cs.secondary;
+      default:
+        return cs.outline;
     }
   }
 
@@ -511,28 +711,47 @@ class DetailsPanel extends ConsumerWidget {
   }
 }
 
+// ──────────────────────────────────────────────
+// TreeControls
+// ──────────────────────────────────────────────
 class TreeControls extends StatelessWidget {
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
   final VoidCallback onReset;
-  const TreeControls({super.key, required this.onZoomIn, required this.onZoomOut, required this.onReset});
+  const TreeControls(
+      {super.key,
+      required this.onZoomIn,
+      required this.onZoomOut,
+      required this.onReset});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      children: [
-        _buildButton(Icons.add, onZoomIn, theme),
-        const SizedBox(height: 8),
-        _buildButton(Icons.remove, onZoomOut, theme),
-        const SizedBox(height: 8),
-        _buildButton(Icons.fullscreen, onReset, theme, isPrimary: true),
-      ],
-    );
+    return Column(children: [
+      _btn(Icons.add, onZoomIn, theme),
+      const SizedBox(height: 8),
+      _btn(Icons.remove, onZoomOut, theme),
+      const SizedBox(height: 8),
+      _btn(Icons.fullscreen, onReset, theme, primary: true),
+    ]);
   }
-  Widget _buildButton(IconData icon, VoidCallback onPressed, ThemeData theme, {bool isPrimary = false}) {
+
+  Widget _btn(IconData icon, VoidCallback onPressed, ThemeData theme,
+      {bool primary = false}) {
     return Container(
-      decoration: BoxDecoration(color: isPrimary ? theme.colorScheme.primary : theme.cardColor, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))]),
-      child: IconButton(icon: Icon(icon, color: isPrimary ? Colors.white : theme.iconTheme.color), onPressed: onPressed),
+      decoration: BoxDecoration(
+          color: primary ? theme.colorScheme.primary : theme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4))
+          ]),
+      child: IconButton(
+          icon: Icon(icon,
+              color: primary ? Colors.white : theme.iconTheme.color),
+          onPressed: onPressed),
     );
   }
 }
