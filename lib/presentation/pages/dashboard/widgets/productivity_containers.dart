@@ -1,54 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../providers/stats_provider.dart';
-import '../../../providers/pause_provider.dart';
-import '../../../providers/activity_manager_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/riverpod_bridge.dart';
+import '../../../providers/pause_notifier.dart';
 import '../../../widgets/glowing_quote_text.dart';
 import '../details/time_details_page.dart';
 import '../details/counts_details_page.dart';
 import '../details/pause_details_page.dart';
 import '../details/done_details_page.dart';
 
-class ProductivityContainers extends StatelessWidget {
+class ProductivityContainers extends ConsumerWidget {
   const ProductivityContainers({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: IntrinsicHeight(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const _PlanNameContainer(),
-              const SizedBox(width: 8),
-              const _TimeContainer(),
-              const SizedBox(width: 8),
-              const _CountsContainer(),
-              const SizedBox(width: 8),
-              const _PauseResumeController(),
-              const SizedBox(width: 8),
-              const _DoneContainer(),
-            ],
-          ),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+      child: IntrinsicHeight(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(flex: 3, child: _PlanNameContainer()),
+            SizedBox(width: 8),
+            Flexible(child: _TimeContainer()),
+            SizedBox(width: 8),
+            Flexible(child: _CountsContainer()),
+            SizedBox(width: 8),
+            Flexible(child: _PauseResumeController()),
+            SizedBox(width: 8),
+            const Flexible(child: _DoneContainer()),
+          ],
         ),
       ),
     );
   }
 }
 
-class _PlanNameContainer extends StatelessWidget {
+class _PlanNameContainer extends ConsumerWidget {
   const _PlanNameContainer();
 
   @override
-  Widget build(BuildContext context) {
-    // Wrap GlowingQuoteText but make it conform to the same height
-    return const SizedBox(
-      width: 180, // A bit of a fixed width for the "Plan Name" part
-      child: GlowingQuoteText(),
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Wrap GlowingQuoteText to allow it to expand
+    return const GlowingQuoteText();
   }
 }
 
@@ -58,12 +51,7 @@ class _ProductivityItem extends StatelessWidget {
   final VoidCallback? onLongPress;
   final bool isActive;
 
-  const _ProductivityItem({
-    required this.child,
-    this.onTap,
-    this.onLongPress,
-    this.isActive = false,
-  });
+  const _ProductivityItem({required this.child, this.onTap, this.onLongPress, this.isActive = false});
 
   @override
   Widget build(BuildContext context) {
@@ -76,11 +64,9 @@ class _ProductivityItem extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: isActive 
-                ? colorScheme.onPrimary.withAlpha(50)
-                : colorScheme.onPrimary.withAlpha(25),
+            color: isActive ? colorScheme.onPrimary.withAlpha(50) : colorScheme.onPrimary.withAlpha(25),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isActive ? Colors.greenAccent.withAlpha(120) : colorScheme.onPrimary.withAlpha(40),
@@ -100,12 +86,7 @@ class _StatContent extends StatelessWidget {
   final IconData icon;
   final Color? color;
 
-  const _StatContent({
-    required this.label,
-    required this.value,
-    required this.icon,
-    this.color,
-  });
+  const _StatContent({required this.label, required this.value, required this.icon, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -131,11 +112,7 @@ class _StatContent extends StatelessWidget {
             ),
             Text(
               value,
-              style: TextStyle(
-                color: color ?? colorScheme.onPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: color ?? colorScheme.onPrimary, fontSize: 12, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -144,93 +121,73 @@ class _StatContent extends StatelessWidget {
   }
 }
 
-class _TimeContainer extends StatelessWidget {
+class _TimeContainer extends ConsumerWidget {
   const _TimeContainer();
 
   @override
-  Widget build(BuildContext context) {
-    return Selector<StatsController, int>(
-      selector: (_, stats) => stats.getTodayFocusTime(),
-      builder: (context, seconds, _) {
-        final duration = Duration(seconds: seconds);
-        final hours = duration.inHours;
-        final minutes = duration.inMinutes % 60;
-        final secs = duration.inSeconds % 60;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(statsControllerProvider);
+    final seconds = stats.getTodayFocusTime();
+    final duration = Duration(seconds: seconds);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    final secs = duration.inSeconds % 60;
 
-        String formatted = hours > 0 ? '${hours}h ${minutes}m' : (minutes > 0 ? '${minutes}m ${secs}s' : '${secs}s');
+    String formatted = hours > 0 ? '${hours}h ${minutes}m' : (minutes > 0 ? '${minutes}m ${secs}s' : '${secs}s');
 
-        return _ProductivityItem(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TimeDetailsPage())),
-          child: _StatContent(
-            label: 'Today',
-            value: formatted,
-            icon: Icons.timer_outlined,
-          ),
-        );
-      },
+    return _ProductivityItem(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TimeDetailsPage())),
+      child: _StatContent(label: 'Today', value: formatted, icon: Icons.timer_outlined),
     );
   }
 }
 
-class _CountsContainer extends StatelessWidget {
+class _CountsContainer extends ConsumerWidget {
   const _CountsContainer();
 
   @override
-  Widget build(BuildContext context) {
-    return Selector<StatsController, double>(
-      selector: (_, stats) => stats.getTodayCounts(),
-      builder: (context, count, _) {
-        return _ProductivityItem(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CountsDetailsPage())),
-          child: _StatContent(
-            label: 'Counts',
-            value: count.toInt().toString(),
-            icon: Icons.add_circle_outline,
-          ),
-        );
-      },
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(statsControllerProvider);
+    final count = stats.getTodayCounts();
+    return _ProductivityItem(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CountsDetailsPage())),
+      child: _StatContent(label: 'Counts', value: count.toInt().toString(), icon: Icons.add_circle_outline),
     );
   }
 }
 
-class _DoneContainer extends StatelessWidget {
+class _DoneContainer extends ConsumerWidget {
   const _DoneContainer();
 
   @override
-  Widget build(BuildContext context) {
-    return Selector<StatsController, int>(
-      selector: (_, stats) => stats.getTodayDoneCount(),
-      builder: (context, count, _) {
-        return _ProductivityItem(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DoneDetailsPage())),
-          child: _StatContent(
-            label: 'Done',
-            value: count.toString(),
-            icon: Icons.check_circle_outline,
-          ),
-        );
-      },
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref.watch(statsControllerProvider);
+    final count = stats.getTodayDoneCount();
+    return _ProductivityItem(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DoneDetailsPage())),
+      child: _StatContent(label: 'Done', value: count.toString(), icon: Icons.check_circle_outline),
     );
   }
 }
 
-class _PauseResumeController extends StatelessWidget {
+class _PauseResumeController extends ConsumerWidget {
   const _PauseResumeController();
 
   @override
-  Widget build(BuildContext context) {
-    final pauseProvider = context.watch<PauseProvider>();
-    final activityController = context.watch<ActivityController>();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pausedIds = ref.watch(pauseStateProvider);
+    final pauseNotifier = ref.read(pauseStateProvider.notifier);
+    final activityController = ref.watch(activityControllerProvider);
     final hasRunning = activityController.hasRunningActivity;
-    final isPausedViaController = pauseProvider.isPaused;
+    final isPausedViaController = pausedIds.isNotEmpty;
 
     return _ProductivityItem(
       isActive: hasRunning,
       onTap: () {
         if (hasRunning) {
-          pauseProvider.pauseAll();
+          pauseNotifier.pauseAll();
         } else if (isPausedViaController) {
-          pauseProvider.resumeAll();
+          pauseNotifier.resumeAll();
         }
       },
       onLongPress: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PauseDetailsPage())),

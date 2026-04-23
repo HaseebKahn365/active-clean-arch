@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../providers/activity_manager_provider.dart';
-import '../../../providers/pause_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../providers/riverpod_bridge.dart';
+import '../../../providers/pause_notifier.dart';
 
-class PauseDetailsPage extends StatelessWidget {
+class PauseDetailsPage extends ConsumerWidget {
   const PauseDetailsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final activityController = context.watch<ActivityController>();
-    final pauseProvider = context.watch<PauseProvider>();
-    final pausedIds = pauseProvider.pausedActivityIds;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activityController = ref.watch(activityControllerProvider);
+    final pausedIds = ref.watch(pauseStateProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Globally Paused Activities')),

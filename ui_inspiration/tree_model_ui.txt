@@ -1,0 +1,405 @@
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { 
+  Pause, 
+  CheckCircle2, 
+  Clock, 
+  Hash, 
+  Activity,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  Zap,
+  Maximize2,
+  Minus,
+  Plus
+} from 'lucide-react';
+
+/**
+ * 🌲 EXPANDED SYNTHETIC DATASET (Deep Hierarchy)
+ */
+const INITIAL_ACTIVITIES = [
+  // ROOT 1: LIFE GOALS
+  { id: "L1", name: "Life Mastery", parent_id: null, status: "active", duration: 0 },
+  { id: "L2", name: "Physical Health", parent_id: "L1", status: "active", duration: 3600 },
+  { id: "L3", name: "Cardio Engine", parent_id: "L2", status: "active", duration: 1800 },
+  { id: "L4", name: "Strength Core", parent_id: "L2", status: "paused", duration: 1800 },
+  { id: "L5", name: "Nutrition Plan", parent_id: "L2", status: "completed", duration: 900 },
+  { id: "L6", name: "Financial Freedom", parent_id: "L1", status: "paused", duration: 7200 },
+  { id: "L7", name: "Investment Research", parent_id: "L6", status: "paused", duration: 3600 },
+  { id: "L8", name: "Portfolio Balancing", parent_id: "L7", status: "paused", duration: 1800 },
+  
+  // ROOT 2: PROJECT TITAN (Work)
+  { id: "W1", name: "Project Titan", parent_id: null, status: "active", duration: 14400 },
+  { id: "W2", name: "Frontend Architecture", parent_id: "W1", status: "active", duration: 7200 },
+  { id: "W3", name: "UI Components", parent_id: "W2", status: "active", duration: 3600 },
+  { id: "W4", name: "Atomic Design System", parent_id: "W3", status: "active", duration: 1800 },
+  { id: "W5", name: "Interaction Prototyping", parent_id: "W3", status: "paused", duration: 1800 },
+  { id: "W6", name: "Performance Tuning", parent_id: "W2", status: "completed", duration: 3600 },
+  { id: "W7", name: "Backend Infrastructure", parent_id: "W1", status: "active", duration: 7200 },
+  { id: "W8", name: "API Layer", parent_id: "W7", status: "active", duration: 3600 },
+  { id: "W9", name: "GraphQL Schema", parent_id: "W8", status: "completed", duration: 1800 },
+  { id: "W10", name: "WebSocket Hub", parent_id: "W8", status: "active", duration: 1800 },
+  { id: "W11", name: "Database Migrations", parent_id: "W7", status: "completed", duration: 3600 },
+
+  // ROOT 3: PERSONAL LEARNING
+  { id: "S1", name: "Deep Learning", parent_id: null, status: "paused", duration: 5400 },
+  { id: "S2", name: "Neural Networks", parent_id: "S1", status: "paused", duration: 2700 },
+  { id: "S3", name: "Backpropagation", parent_id: "S2", status: "completed", duration: 1350 },
+  { id: "S4", name: "Transformer Models", parent_id: "S2", status: "paused", duration: 1350 },
+  { id: "S5", name: "Systems Design", parent_id: "S1", status: "completed", duration: 2700 }
+];
+
+const NODE_WIDTH = 200;
+const NODE_HEIGHT = 100;
+const HORIZONTAL_GAP = 60;
+const VERTICAL_GAP = 160;
+
+/**
+ * UTILS
+ */
+const formatDuration = (s) => {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+};
+
+/**
+ * MAIN APP
+ */
+export default function App() {
+  const [activities] = useState(INITIAL_ACTIVITIES);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [expandedNodes, setExpandedNodes] = useState(new Set(INITIAL_ACTIVITIES.map(a => a.id)));
+  
+  // Viewport State
+  const [scale, setScale] = useState(0.8);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const lastMousePos = useRef({ x: 0, y: 0 });
+  const containerRef = useRef(null);
+
+  /**
+   * LAYOUT ENGINE: Calculate absolute X/Y for every node
+   */
+  const layout = useMemo(() => {
+    const activityMap = {};
+    activities.forEach(a => {
+      activityMap[a.id] = { ...a, children: [], width: 0, x: 0, y: 0 };
+    });
+
+    const roots = [];
+    activities.forEach(a => {
+      if (a.parent_id) activityMap[a.parent_id].children.push(activityMap[a.id]);
+      else roots.push(activityMap[a.id]);
+    });
+
+    // Step 1: Calculate subtree widths recursively
+    const calculateWidths = (node) => {
+      if (!expandedNodes.has(node.id) || node.children.length === 0) {
+        node.subtreeWidth = NODE_WIDTH;
+        return NODE_WIDTH;
+      }
+      const childrenWidth = node.children.reduce((acc, child) => acc + calculateWidths(child), 0) + 
+                            (node.children.length - 1) * HORIZONTAL_GAP;
+      node.subtreeWidth = Math.max(NODE_WIDTH, childrenWidth);
+      return node.subtreeWidth;
+    };
+    roots.forEach(calculateWidths);
+
+    // Step 2: Assign positions
+    const assignPositions = (node, startX, depth) => {
+      node.y = depth * VERTICAL_GAP;
+      node.x = startX + (node.subtreeWidth / 2);
+      
+      let currentX = startX;
+      if (expandedNodes.has(node.id)) {
+        node.children.forEach(child => {
+          assignPositions(child, currentX, depth + 1);
+          currentX += child.subtreeWidth + HORIZONTAL_GAP;
+        });
+      }
+    };
+
+    let totalX = 0;
+    roots.forEach(root => {
+      assignPositions(root, totalX, 0);
+      totalX += root.subtreeWidth + HORIZONTAL_GAP * 2;
+    });
+
+    return activityMap;
+  }, [activities, expandedNodes]);
+
+  const selectedNode = layout[selectedNodeId] || null;
+
+  /**
+   * PAN & ZOOM HANDLERS
+   */
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.max(0.4, Math.min(2.5, scale * delta));
+    setScale(newScale);
+  };
+
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    isDragging.current = true;
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseMove = useCallback((e) => {
+    if (!isDragging.current) return;
+    const dx = e.clientX - lastMousePos.current.x;
+    const dy = e.clientY - lastMousePos.current.y;
+    setOffset(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+    lastMousePos.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const handleMouseUp = () => {
+    isDragging.current = false;
+  };
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (el) {
+      el.addEventListener('wheel', handleWheel, { passive: false });
+      return () => el.removeEventListener('wheel', handleWheel);
+    }
+  }, [scale]);
+
+  const toggleExpand = (id, e) => {
+    e.stopPropagation();
+    setExpandedNodes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  return (
+    <div className="relative w-full h-screen bg-[#020408] text-slate-300 overflow-hidden select-none font-sans">
+      
+      {/* 1. TOP-LEFT DETAILS PANEL (Pinned) */}
+      <div className="fixed top-6 left-6 z-50 w-72 pointer-events-none">
+        <div className="pointer-events-auto bg-slate-900/90 backdrop-blur-2xl border border-slate-700/50 rounded-2xl p-5 shadow-2xl transition-all duration-300">
+          <div className="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
+            <Info className="w-4 h-4 text-indigo-400" />
+            <h2 className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-500">Explorer Details</h2>
+          </div>
+          
+          {selectedNode ? (
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div>
+                <h3 className="text-lg font-bold text-white tracking-tight leading-tight">{selectedNode.name}</h3>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border
+                    ${selectedNode.status === 'active' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' : 
+                      selectedNode.status === 'paused' ? 'bg-slate-800 text-slate-500 border-slate-700' : 
+                      'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'}`}>
+                    {selectedNode.status}
+                  </span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Stat icon={<Clock />} label="Duration" value={formatDuration(selectedNode.duration)} />
+                <Stat icon={<Hash />} label="Node ID" value={selectedNode.id} />
+              </div>
+            </div>
+          ) : (
+            <div className="py-6 text-center text-slate-600 text-sm italic">
+              Select any node in the graph to inspect metrics.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 2. ZOOM CONTROLS (Bottom Right) */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+        <button onClick={() => setScale(s => Math.min(2.5, s + 0.2))} className="p-3 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-colors shadow-xl">
+          <Plus size={18} />
+        </button>
+        <button onClick={() => setScale(s => Math.max(0.4, s - 0.2))} className="p-3 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-colors shadow-xl">
+          <Minus size={18} />
+        </button>
+        <button onClick={() => { setScale(0.8); setOffset({x:0, y:0}); }} className="p-3 bg-indigo-600 border border-indigo-500 rounded-xl hover:bg-indigo-500 transition-colors shadow-xl">
+          <Maximize2 size={18} />
+        </button>
+      </div>
+
+      {/* 3. INTERACTIVE CANVAS */}
+      <div 
+        ref={containerRef}
+        className="w-full h-full cursor-grab active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <div 
+          className="absolute origin-top-left transition-transform duration-75 ease-out"
+          style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})` }}
+        >
+          {/* SVG Connection Layer */}
+          <svg className="absolute top-0 left-0 pointer-events-none overflow-visible" style={{ width: 10000, height: 10000 }}>
+            <defs>
+              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+            {Object.values(layout).map(node => {
+              if (!expandedNodes.has(node.id)) return null;
+              return node.children.map(child => (
+                <BezierEdge 
+                  key={`${node.id}-${child.id}`} 
+                  startX={node.x} startY={node.y + NODE_HEIGHT}
+                  endX={child.x} endY={child.y}
+                  active={node.status === 'active' && child.status === 'active'}
+                />
+              ));
+            })}
+          </svg>
+
+          {/* Node Layer */}
+          {Object.values(layout).map(node => (
+            <div 
+              key={node.id}
+              style={{ left: node.x - NODE_WIDTH/2, top: node.y, width: NODE_WIDTH }}
+              className="absolute"
+            >
+              <GraphNode 
+                node={node}
+                isSelected={selectedNodeId === node.id}
+                isExpanded={expandedNodes.has(node.id)}
+                onSelect={() => setSelectedNodeId(node.id)}
+                onToggle={(e) => toggleExpand(node.id, e)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * COMPONENT: SMOOTH BEZIER EDGE
+ */
+function BezierEdge({ startX, startY, endX, endY, active }) {
+  const midY = (startY + endY) / 2;
+  const path = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+  
+  return (
+    <g>
+      <path 
+        d={path} 
+        fill="none" 
+        stroke={active ? "rgba(99, 102, 241, 0.4)" : "rgba(51, 65, 85, 0.4)"}
+        strokeWidth={active ? "3" : "1.5"}
+        className="transition-all duration-500"
+      />
+      {active && (
+        <path 
+          d={path} 
+          fill="none" 
+          stroke="rgba(99, 102, 241, 0.8)"
+          strokeWidth="2"
+          strokeDasharray="10, 10"
+          className="animate-[dash_2s_linear_infinite]"
+          filter="url(#glow)"
+        />
+      )}
+    </g>
+  );
+}
+
+/**
+ * COMPONENT: THE GRAPH NODE
+ */
+function GraphNode({ node, isSelected, isExpanded, onSelect, onToggle }) {
+  const hasChildren = node.children.length > 0;
+  
+  const themes = {
+    active: "border-indigo-500/50 bg-slate-900 shadow-[0_0_40px_-10px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/20",
+    paused: "border-slate-700 bg-slate-900/80 grayscale-[0.3]",
+    completed: "border-emerald-500/30 bg-emerald-950/10 opacity-70"
+  };
+
+  return (
+    <div 
+      onClick={onSelect}
+      className={`
+        relative p-4 rounded-2xl border transition-all duration-300 cursor-pointer
+        ${themes[node.status]}
+        ${isSelected ? 'scale-110 ring-4 ring-indigo-500/20 z-10' : 'hover:border-slate-400/50'}
+      `}
+    >
+      {/* Status Icon */}
+      <div className="absolute -top-3 left-4">
+        <div className={`p-1.5 rounded-lg border shadow-lg ${
+          node.status === 'active' ? 'bg-indigo-600 border-indigo-400 animate-pulse' : 
+          node.status === 'completed' ? 'bg-emerald-600 border-emerald-400' : 'bg-slate-700 border-slate-600'
+        }`}>
+          {node.status === 'active' ? <Zap size={12} className="text-white" /> : 
+           node.status === 'completed' ? <CheckCircle2 size={12} className="text-white" /> : 
+           <Pause size={12} className="text-white" />}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="mt-2 space-y-1">
+        <h4 className={`text-xs font-black uppercase tracking-tight truncate ${node.status === 'active' ? 'text-white' : 'text-slate-400'}`}>
+          {node.name}
+        </h4>
+        <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
+          <Clock size={10} />
+          <span>{formatDuration(node.duration)}</span>
+          {node.status === 'active' && <Activity size={10} className="text-indigo-400 ml-auto" />}
+        </div>
+      </div>
+
+      {/* Expand/Collapse Trigger */}
+      {hasChildren && (
+        <button 
+          onClick={onToggle}
+          className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center hover:bg-slate-700 transition-colors z-20"
+        >
+          {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+      )}
+
+      {/* Connectors (Visual dots) */}
+      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-slate-600" />
+      {hasChildren && isExpanded && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-slate-600" />}
+    </div>
+  );
+}
+
+/**
+ * MINI HELPERS
+ */
+function Stat({ icon, label, value }) {
+  return (
+    <div className="flex flex-col">
+      <div className="flex items-center gap-1 text-[9px] font-bold text-slate-500 uppercase tracking-tighter">
+        {React.cloneElement(icon, { size: 10 })} {label}
+      </div>
+      <div className="text-xs font-bold text-slate-200 mt-0.5">{value}</div>
+    </div>
+  );
+}
+
+const styles = `
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+`;
+
+if (typeof document !== 'undefined') {
+  const styleEl = document.createElement('style');
+  styleEl.textContent = styles;
+  document.head.appendChild(styleEl);
+}

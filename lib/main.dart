@@ -5,15 +5,13 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider;
 import 'firebase_options.dart';
 import 'core/di/injection_container.dart' as di;
 import 'presentation/providers/activity_manager_provider.dart';
 import 'presentation/providers/auth_provider.dart';
-import 'presentation/providers/theme_provider.dart';
-import 'presentation/providers/backup_provider.dart';
+import 'presentation/providers/theme_notifier.dart';
 import 'presentation/providers/stats_provider.dart';
-import 'presentation/providers/pause_provider.dart';
-import 'presentation/providers/quote_provider.dart';
 import 'infrastructure/notifications/notification_service.dart';
 import 'application/services/background_service.dart';
 import 'presentation/pages/activity_detail_page.dart';
@@ -48,32 +46,29 @@ Future<void> main() async {
   await BackgroundServiceInstance.initialize();
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => di.sl<AppAuthProvider>()),
-        ChangeNotifierProvider(create: (_) => di.sl<ActivityController>()..loadActivities()),
-
-        ChangeNotifierProvider(create: (_) => di.sl<ThemeProvider>()),
-        ChangeNotifierProvider(create: (_) => di.sl<BackupController>()),
-        ChangeNotifierProvider(create: (_) => di.sl<PauseProvider>()),
-        ChangeNotifierProvider(create: (_) => di.sl<StatsController>()..loadData()),
-        ChangeNotifierProvider(create: (_) => di.sl<QuoteProvider>()),
-      ],
-      child: const ActiveApp(),
+    ProviderScope(
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => di.sl<AppAuthProvider>()),
+          ChangeNotifierProvider(create: (_) => di.sl<ActivityController>()..loadActivities()),
+          ChangeNotifierProvider(create: (_) => di.sl<StatsController>()..loadData()),
+        ],
+        child: const ActiveApp(),
+      ),
     ),
   );
 }
 
 final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
-class ActiveApp extends StatefulWidget {
+class ActiveApp extends ConsumerStatefulWidget {
   const ActiveApp({super.key});
 
   @override
-  State<ActiveApp> createState() => _ActiveAppState();
+  ConsumerState<ActiveApp> createState() => _ActiveAppState();
 }
 
-class _ActiveAppState extends State<ActiveApp> {
+class _ActiveAppState extends ConsumerState<ActiveApp> {
   StreamSubscription? _notificationSubscription;
 
   @override
@@ -105,15 +100,15 @@ class _ActiveAppState extends State<ActiveApp> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = context.watch<ThemeProvider>();
+    final themeState = ref.watch(themeNotifierProvider);
 
     return MaterialApp(
       title: 'Active',
       navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.getTheme(themeProvider.colorProfile, Brightness.light),
-      darkTheme: AppTheme.getTheme(themeProvider.colorProfile, Brightness.dark),
-      themeMode: themeProvider.themeMode,
+      theme: AppTheme.getTheme(themeState.colorProfile, Brightness.light),
+      darkTheme: AppTheme.getTheme(themeState.colorProfile, Brightness.dark),
+      themeMode: themeState.themeMode,
 
       builder: (context, child) => MacSwipeBackNavigator(navigatorKey: _navigatorKey, child: child!),
       home: const AuthGate(),

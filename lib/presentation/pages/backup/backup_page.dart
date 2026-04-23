@@ -1,48 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../providers/backup_provider.dart';
-import '../../providers/activity_manager_provider.dart';
-import '../../providers/stats_provider.dart';
+import '../../providers/backup_notifier.dart';
+import '../../providers/riverpod_bridge.dart';
 
-class BackupPage extends StatefulWidget {
+class BackupPage extends ConsumerStatefulWidget {
   const BackupPage({super.key});
 
   @override
-  State<BackupPage> createState() => _BackupPageState();
+  ConsumerState<BackupPage> createState() => _BackupPageState();
 }
 
-class _BackupPageState extends State<BackupPage> {
+class _BackupPageState extends ConsumerState<BackupPage> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BackupController>().loadHistory();
+      ref.read(backupStateProvider.notifier).loadHistory();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<BackupController>();
+    final state = ref.watch(backupStateProvider);
+    final notifier = ref.read(backupStateProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Backups'),
-        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: () => controller.loadHistory())],
+        actions: [IconButton(icon: const Icon(Icons.refresh), onPressed: () => notifier.loadHistory())],
       ),
-      body: controller.isLoading
+      body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
                 _buildHeader(context),
                 Expanded(
-                  child: controller.history.isEmpty
+                  child: state.history.isEmpty
                       ? _buildEmptyState(context)
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: controller.history.length,
+                          itemCount: state.history.length,
                           itemBuilder: (context, index) {
-                            final backup = controller.history[index];
+                            final backup = state.history[index];
                             return _BackupListItem(backup: backup);
                           },
                         ),
@@ -52,11 +52,11 @@ class _BackupPageState extends State<BackupPage> {
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(24.0),
         child: ElevatedButton.icon(
-          onPressed: controller.isLoading
+          onPressed: state.isLoading
               ? null
               : () async {
                   try {
-                    await controller.createBackup();
+                    await notifier.createBackup();
                     if (context.mounted) {
                       ScaffoldMessenger.of(
                         context,
@@ -146,8 +146,8 @@ class _BackupPageState extends State<BackupPage> {
                 onPressed: isConfirmed
                     ? () async {
                         Navigator.pop(dialogContext);
-                        final activityController = context.read<ActivityController>();
-                        final statsController = context.read<StatsController>();
+                        final activityController = ref.read(activityControllerProvider);
+                        final statsController = ref.read(statsControllerProvider);
                         try {
                           await activityController.clearAllData();
                           await statsController.loadData();
@@ -192,13 +192,13 @@ class _BackupPageState extends State<BackupPage> {
   }
 }
 
-class _BackupListItem extends StatelessWidget {
+class _BackupListItem extends ConsumerWidget {
   final dynamic backup;
 
   const _BackupListItem({required this.backup});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateStr = DateFormat('MMM dd, yyyy - hh:mm a').format(backup.timestamp);
 
     return Card(
@@ -216,7 +216,7 @@ class _BackupListItem extends StatelessWidget {
           ],
           onSelected: (value) {
             if (value == 'restore') {
-              _showRestoreDialog(context);
+              _showRestoreDialog(context, ref);
             }
           },
         ),
@@ -224,7 +224,7 @@ class _BackupListItem extends StatelessWidget {
     );
   }
 
-  void _showRestoreDialog(BuildContext context) {
+  void _showRestoreDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -237,11 +237,11 @@ class _BackupListItem extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              final controller = context.read<BackupController>();
-              final activityController = context.read<ActivityController>();
+              final notifier = ref.read(backupStateProvider.notifier);
+              final activityController = ref.read(activityControllerProvider);
 
               try {
-                await controller.restoreFrom(backup);
+                await notifier.restoreFrom(backup);
                 // Refresh activity controller to reflect merged data
                 await activityController.loadActivities();
 

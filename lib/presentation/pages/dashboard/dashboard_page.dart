@@ -1,24 +1,27 @@
 import 'package:active/presentation/providers/activity_manager_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/theme_provider.dart';
+import '../../providers/theme_notifier.dart';
 import '../../theme/app_color_schemes.dart';
 import 'widgets/activity_list.dart';
 import 'widgets/pinned_activity_list.dart';
 import 'widgets/create_activity_sheet.dart';
 import '../backup/backup_page.dart';
-import '../../widgets/glowing_quote_text.dart';
-import 'widgets/productivity_containers.dart';
 
-class DashboardPage extends StatefulWidget {
+import 'widgets/productivity_containers.dart';
+import 'widgets/tree/activity_tree.dart';
+import '../../providers/dashboard_ui_notifier.dart';
+
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends ConsumerState<DashboardPage> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
 
@@ -42,29 +45,33 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     final user = context.watch<AppAuthProvider>().user;
     final colorScheme = Theme.of(context).colorScheme;
+    final uiState = ref.watch(dashboardUiProvider);
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           _buildAppBar(context, user),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const PinnedActivityList(),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Current Activities',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
-                  ),
-                  const SizedBox(height: 8),
-                  const ActivityList(),
-                ],
+          if (uiState.viewMode == DashboardViewMode.list)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const PinnedActivityList(),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Current Activities',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+                    ),
+                    const SizedBox(height: 8),
+                    const ActivityList(),
+                  ],
+                ),
               ),
-            ),
-          ),
+            )
+          else
+            const SliverFillRemaining(child: ActivityTree()),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -91,8 +98,9 @@ class _DashboardPageState extends State<DashboardPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return SliverAppBar(
-      expandedHeight: _isSearching ? 120 : 300,
+      expandedHeight: _isSearching ? 100 : 180, // Increased to fix 32px overflow
       pinned: true,
+      elevation: 0,
       centerTitle: false,
       backgroundColor: colorScheme.primary,
       title: _isSearching
@@ -135,6 +143,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupPage()));
           },
         ),
+        _buildViewModeToggle(context),
         IconButton(
           icon: Icon(Icons.bar_chart_rounded, color: colorScheme.onPrimary),
           onPressed: () => Navigator.pushNamed(context, '/stats/global'),
@@ -142,10 +151,11 @@ class _DashboardPageState extends State<DashboardPage> {
         _buildThemeSelector(context),
       ],
       flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.pin, // Remove "fancy" parallax scroll effect
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [colorScheme.primary, colorScheme.primary.withAlpha(200)],
+              colors: [colorScheme.primary, colorScheme.primary.withAlpha(220)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -154,10 +164,10 @@ class _DashboardPageState extends State<DashboardPage> {
               ? const SizedBox.shrink()
               : SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: const EdgeInsets.fromLTRB(24, 50, 24, 0), // Slightly reduced padding
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Row(
                           children: [
@@ -201,7 +211,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                         const ProductivityContainers(),
                       ],
                     ),
@@ -212,17 +222,44 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  Widget _buildViewModeToggle(BuildContext context) {
+    final uiState = ref.watch(dashboardUiProvider);
+    final uiNotifier = ref.read(dashboardUiProvider.notifier);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(
+            Icons.list_alt_rounded,
+            color: uiState.viewMode == DashboardViewMode.list ? Colors.white : colorScheme.onPrimary.withOpacity(0.5),
+          ),
+          onPressed: () => uiNotifier.setViewMode(DashboardViewMode.list),
+        ),
+        IconButton(
+          icon: Icon(
+            Icons.account_tree_outlined,
+            color: uiState.viewMode == DashboardViewMode.tree ? Colors.white : colorScheme.onPrimary.withOpacity(0.5),
+          ),
+          onPressed: () => uiNotifier.setViewMode(DashboardViewMode.tree),
+        ),
+      ],
+    );
+  }
+
   Widget _buildThemeSelector(BuildContext context) {
-    final themeProvider = context.watch<ThemeProvider>();
+    ref.watch(themeNotifierProvider);
+    final themeNotifier = ref.read(themeNotifierProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
 
     return PopupMenuButton<dynamic>(
       icon: Icon(Icons.palette_outlined, color: colorScheme.onPrimary),
       onSelected: (value) {
         if (value is ThemeMode) {
-          themeProvider.setThemeMode(value);
+          themeNotifier.setThemeMode(value);
         } else if (value is ColorProfile) {
-          themeProvider.setColorProfile(value);
+          themeNotifier.setColorProfile(value);
         }
       },
       itemBuilder: (context) => [

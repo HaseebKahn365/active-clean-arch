@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/quote_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/quote_notifier.dart';
 
-class GlowingQuoteText extends StatefulWidget {
+class GlowingQuoteText extends ConsumerStatefulWidget {
   const GlowingQuoteText({super.key});
 
   @override
-  State<GlowingQuoteText> createState() => _GlowingQuoteTextState();
+  ConsumerState<GlowingQuoteText> createState() => _GlowingQuoteTextState();
 }
 
-class _GlowingQuoteTextState extends State<GlowingQuoteText> with SingleTickerProviderStateMixin {
+class _GlowingQuoteTextState extends ConsumerState<GlowingQuoteText> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -31,11 +31,11 @@ class _GlowingQuoteTextState extends State<GlowingQuoteText> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    final quoteProvider = context.watch<QuoteProvider>();
+    final quote = ref.watch(quoteNotifierProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
-      onTap: () => _showEditDialog(context, quoteProvider),
+      onTap: () => _showEditDialog(context),
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
@@ -57,29 +57,31 @@ class _GlowingQuoteTextState extends State<GlowingQuoteText> with SingleTickerPr
                 width: 1.2,
               ),
             ),
-            child: Text(
-              quoteProvider.quote,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 3.0,
-                color: colorScheme.onPrimary,
-                fontStyle: FontStyle.italic,
-                shadows: [
-                  Shadow(
-                    color: colorScheme.secondary.withAlpha((150 + (100 * glowFactor)).toInt()),
-                    offset: const Offset(0, 0),
-                    blurRadius: 8 + (8 * glowFactor),
-                  ),
-                  Shadow(
-                    color: colorScheme.onPrimary.withAlpha((80 + (60 * glowFactor)).toInt()),
-                    offset: const Offset(0, 0),
-                    blurRadius: 12 + (12 * glowFactor),
-                  ),
-                ],
+            child: Center(
+              child: Text(
+                quote,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14, // Slightly smaller base font for better fit, still prominent
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0, // Reduced slightly to avoid excessive width
+                  color: colorScheme.onPrimary,
+                  fontStyle: FontStyle.italic,
+                  shadows: [
+                    Shadow(
+                      color: colorScheme.secondary.withAlpha((150 + (100 * glowFactor)).toInt()),
+                      offset: const Offset(0, 0),
+                      blurRadius: 8 + (8 * glowFactor),
+                    ),
+                    Shadow(
+                      color: colorScheme.onPrimary.withAlpha((80 + (60 * glowFactor)).toInt()),
+                      offset: const Offset(0, 0),
+                      blurRadius: 12 + (12 * glowFactor),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -88,8 +90,9 @@ class _GlowingQuoteTextState extends State<GlowingQuoteText> with SingleTickerPr
     );
   }
 
-  void _showEditDialog(BuildContext context, QuoteProvider provider) {
-    final controller = TextEditingController(text: provider.quote);
+  void _showEditDialog(BuildContext context) {
+    final quote = ref.read(quoteNotifierProvider);
+    final controller = TextEditingController(text: quote);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -116,7 +119,7 @@ class _GlowingQuoteTextState extends State<GlowingQuoteText> with SingleTickerPr
           ElevatedButton(
             onPressed: () {
               if (controller.text.trim().isNotEmpty) {
-                provider.updateQuote(controller.text.trim().toUpperCase());
+                ref.read(quoteNotifierProvider.notifier).updateQuote(controller.text.trim().toUpperCase());
               }
               Navigator.pop(context);
             },

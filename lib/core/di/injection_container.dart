@@ -29,14 +29,10 @@ import '../../data/repositories/backup_repository_impl.dart';
 import '../../domain/use_cases/backup/create_backup_use_case.dart';
 import '../../domain/use_cases/backup/get_backup_history_use_case.dart';
 import '../../domain/use_cases/backup/restore_backup_use_case.dart';
-import '../../presentation/providers/backup_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../presentation/providers/activity_manager_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
-import '../../presentation/providers/theme_provider.dart';
 import '../../presentation/providers/stats_provider.dart';
-import '../../presentation/providers/pause_provider.dart';
-import '../../presentation/providers/quote_provider.dart';
 import '../../application/services/activity_timer_service.dart';
 
 final sl = GetIt.instance;
@@ -84,18 +80,7 @@ Future<void> init() async {
     ),
   );
 
-  sl.registerLazySingleton(
-    () => BackupController(
-      createBackupUseCase: sl(),
-      getBackupHistoryUseCase: sl(),
-      restoreBackupUseCase: sl(),
-      authProvider: sl(),
-    ),
-  );
-  sl.registerLazySingleton(() => ThemeProvider(sl()));
-  sl.registerLazySingleton(() => PauseProvider(activityController: sl()));
   sl.registerLazySingleton(() => StatsController(repository: sl(), activityController: sl()));
-  sl.registerLazySingleton(() => QuoteProvider(sl()));
 
   // Use Cases
   sl.registerLazySingleton(() => GetActivitiesUseCase(sl()));
