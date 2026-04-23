@@ -91,30 +91,49 @@ class _StatContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    
+    // Instead of LayoutBuilder constraints, we estimate based on total screen width.
+    // If screen < 400, it's small. If < 350, very small.
+    final isSmall = screenWidth < 400;
+    final isVerySmall = screenWidth < 350;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, size: 16, color: color ?? colorScheme.onPrimary),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: (color ?? colorScheme.onPrimary).withAlpha(180),
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
+        if (!isVerySmall) ...[
+          Icon(icon, size: isSmall ? 14 : 16, color: color ?? colorScheme.onPrimary),
+          SizedBox(width: isSmall ? 4 : 8),
+        ],
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: (color ?? colorScheme.onPrimary).withAlpha(180),
+                  fontSize: isSmall ? 8 : 10,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Text(
-              value,
-              style: TextStyle(color: color ?? colorScheme.onPrimary, fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ],
+              Text(
+                value,
+                style: TextStyle(
+                  color: color ?? colorScheme.onPrimary, 
+                  fontSize: isSmall ? 10 : 12, 
+                  fontWeight: FontWeight.bold
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ],
     );

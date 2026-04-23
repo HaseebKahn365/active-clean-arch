@@ -74,7 +74,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             const SliverFillRemaining(child: ActivityTree()),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: uiState.viewMode == DashboardViewMode.tree ? null : FloatingActionButton.extended(
         onPressed: () {
           showModalBottomSheet(
             context: context,

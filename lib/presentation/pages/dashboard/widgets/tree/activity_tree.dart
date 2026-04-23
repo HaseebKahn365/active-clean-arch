@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../domain/entities/activity.dart';
 import '../../../../providers/dashboard_ui_notifier.dart';
 import '../../../../providers/riverpod_bridge.dart';
+import '../create_activity_sheet.dart';
 import 'tree_layout.dart';
 import 'dart:math' as math;
 
@@ -162,10 +164,12 @@ class _ActivityTreeState extends ConsumerState<ActivityTree>
                         painter: TreePainter(
                           layout: layout,
                           expandedNodes: uiState.expandedNodeIds,
+                          activeNodeId: uiState.selectedNodeId,
                           theme: Theme.of(context),
                           animationValue: _animationController.value,
                         ),
                       ),
+
                       ...visibleNodes.map((node) {
                         final isReparenting =
                             uiState.reparentingNodeId == node.activity.id;
@@ -212,11 +216,15 @@ class _ActivityTreeState extends ConsumerState<ActivityTree>
             Positioned(
               top: 24,
               left: 24,
-              child: DetailsPanel(
-                selectedNodeId: uiState.selectedNodeId,
-                onDetach: uiState.selectedNodeId != null
-                    ? () => _handleDetach(uiState.selectedNodeId!)
-                    : null,
+              right: 24,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: DetailsPanel(
+                  selectedNodeId: uiState.selectedNodeId,
+                  onDetach: uiState.selectedNodeId != null
+                      ? () => _handleDetach(uiState.selectedNodeId!)
+                      : null,
+                ),
               ),
             ),
             if (uiState.reparentingNodeId != null)
@@ -519,12 +527,14 @@ class TreeNode extends StatelessWidget {
 class TreePainter extends CustomPainter {
   final Map<String, TreeLayoutNode> layout;
   final Set<String> expandedNodes;
+  final String? activeNodeId;
   final ThemeData theme;
   final double animationValue;
 
   TreePainter({
     required this.layout,
     required this.expandedNodes,
+    this.activeNodeId,
     required this.theme,
     this.animationValue = 0.0,
   });
@@ -532,6 +542,15 @@ class TreePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.stroke;
+
+    final Set<String> activePathNodeIds = {};
+    if (activeNodeId != null) {
+      String? currentId = activeNodeId;
+      while (currentId != null) {
+        activePathNodeIds.add(currentId);
+        currentId = layout[currentId]?.activity.parentId;
+      }
+    }
 
     for (final node in layout.values) {
       if (!expandedNodes.contains(node.activity.id)) continue;
@@ -548,15 +567,15 @@ class TreePainter extends CustomPainter {
           ..moveTo(startX, startY)
           ..cubicTo(startX, midY, endX, midY, endX, endY);
 
-        final isActive = node.activity.status == ActivityStatus.running &&
-            child.activity.status == ActivityStatus.running;
-        paint.color = isActive
+        final isActivePath = activePathNodeIds.contains(child.activity.id);
+        
+        paint.color = isActivePath
             ? theme.colorScheme.primary.withValues(alpha: 0.8)
             : theme.colorScheme.onSurface.withValues(alpha: 0.4);
-        paint.strokeWidth = isActive ? 4 : 2.5;
+        paint.strokeWidth = isActivePath ? 4 : 2.5;
         canvas.drawPath(path, paint);
 
-        if (isActive) {
+        if (isActivePath) {
           final dashPath = _createAnimatedDashPath(path, animationValue);
           canvas.drawPath(
               dashPath,
@@ -589,6 +608,7 @@ class TreePainter extends CustomPainter {
   bool shouldRepaint(covariant TreePainter old) =>
       old.layout != layout ||
       old.expandedNodes != expandedNodes ||
+      old.activeNodeId != activeNodeId ||
       old.animationValue != animationValue;
 }
 
@@ -602,10 +622,16 @@ class DetailsPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    if (selectedNodeId == null) {
-      return Container(
-        width: 280,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Scale down proportionally for smaller screens, max out at 280
+        double panelWidth = constraints.maxWidth * 0.85;
+        if (panelWidth > 280) panelWidth = 280;
+
+        final theme = Theme.of(context);
+        if (selectedNodeId == null) {
+          return Container(
+            width: panelWidth,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
             color: theme.cardColor.withValues(alpha: 0.9),
@@ -616,13 +642,13 @@ class DetailsPanel extends ConsumerWidget {
             style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
       );
     }
-    final activity =
-        ref.watch(activityControllerProvider).activitiesMap[selectedNodeId];
-    if (activity == null) return const SizedBox.shrink();
+        final activity =
+            ref.watch(activityControllerProvider).activitiesMap[selectedNodeId];
+        if (activity == null) return const SizedBox.shrink();
 
-    final colorScheme = theme.colorScheme;
-    return Container(
-      width: 280,
+        final colorScheme = theme.colorScheme;
+        return Container(
+          width: panelWidth,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
           color: theme.cardColor.withValues(alpha: 0.9),
@@ -671,8 +697,73 @@ class DetailsPanel extends ConsumerWidget {
                     color: _statusColor(colorScheme, activity.status))),
           ),
           const SizedBox(height: 20),
-          _stat(context, Icons.access_time, 'Duration',
-              _formatDuration(activity.totalSeconds)),
+          Row(
+            children: [
+              Expanded(
+                child: _stat(context, Icons.access_time, 'Duration',
+                    _formatDuration(activity.totalSeconds)),
+              ),
+              if (activity.type == ActivityType.countBased)
+                Expanded(
+                  child: _stat(context, Icons.numbers, 'Count',
+                      ref.watch(activityControllerProvider).getCountTotalFor(activity.id).toStringAsFixed(0)),
+                ),
+            ],
+          ),
+          if (activity.status != ActivityStatus.completed) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                if (activity.status == ActivityStatus.paused || activity.status == ActivityStatus.idle)
+                  Expanded(
+                    child: _controlBtn(context, Icons.play_arrow, 'Resume', () {
+                      ref.read(activityControllerProvider.notifier).startActivity(activity.id);
+                    }),
+                  ),
+                if (activity.status == ActivityStatus.running)
+                  Expanded(
+                    child: _controlBtn(context, Icons.pause, 'Pause', () {
+                      ref.read(activityControllerProvider.notifier).pauseActivity(activity.id);
+                    }),
+                  ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _controlBtn(context, Icons.check, 'Finish', () {
+                    ref.read(activityControllerProvider.notifier).completeActivity(activity.id);
+                  }),
+                ),
+              ],
+            ),
+          ],
+          if (activity.type == ActivityType.countBased && activity.status != ActivityStatus.completed) ...[
+            const SizedBox(height: 16),
+            _CountInputContainer(activityId: activity.id),
+          ],
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  barrierColor: Colors.transparent,
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  builder: (context) => CreateActivitySheet(parentId: activity.id),
+                );
+              },
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('New Activity', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
           // Detach button — only visible when node has a parent
           if (activity.parentId != null && onDetach != null) ...[
             const SizedBox(height: 16),
@@ -702,8 +793,23 @@ class DetailsPanel extends ConsumerWidget {
               ),
             ),
           ],
-        ],
-      ),
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/activity/${activity.id}');
+              },
+              icon: const Icon(Icons.open_in_new, size: 14),
+              label: const Text('Visit Details', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: TextButton.styleFrom(
+                foregroundColor: colorScheme.primary,
+              ),
+            ),
+          ),
+          ],
+        ),
+      );
+      },
     );
   }
 
@@ -726,6 +832,29 @@ class DetailsPanel extends ConsumerWidget {
     ]);
   }
 
+  Widget _controlBtn(BuildContext context, IconData icon, String label, VoidCallback onTap) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 18, color: theme.colorScheme.primary),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+          ],
+        ),
+      ),
+    );
+  }
+
   Color _statusColor(ColorScheme cs, ActivityStatus s) {
     switch (s) {
       case ActivityStatus.running:
@@ -744,6 +873,95 @@ class DetailsPanel extends ConsumerWidget {
     final m = (seconds % 3600) ~/ 60;
     if (h > 0) return '${h}h ${m}m';
     return '${m}m';
+  }
+}
+
+// ──────────────────────────────────────────────
+// CountInputContainer
+// ──────────────────────────────────────────────
+class _CountInputContainer extends ConsumerStatefulWidget {
+  final String activityId;
+  const _CountInputContainer({required this.activityId});
+
+  @override
+  ConsumerState<_CountInputContainer> createState() => _CountInputContainerState();
+}
+
+class _CountInputContainerState extends ConsumerState<_CountInputContainer> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final val = double.tryParse(_controller.text);
+    if (val != null && val != 0) {
+      if (val > 500) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cannot insert values above 500.')),
+        );
+        return;
+      }
+      ref.read(activityControllerProvider.notifier).addCount(widget.activityId, val);
+      _controller.clear();
+      FocusScope.of(context).unfocus();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+              inputFormatters: [
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  if (newValue.text.isEmpty) return newValue;
+                  final val = double.tryParse(newValue.text);
+                  if (val != null && val > 500) return oldValue;
+                  return newValue;
+                }),
+              ],
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: 'Add count value...',
+                hintStyle: TextStyle(fontSize: 12, color: theme.hintColor),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: _submit,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.add, size: 16, color: theme.colorScheme.onPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
