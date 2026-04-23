@@ -615,201 +615,363 @@ class TreePainter extends CustomPainter {
 // ──────────────────────────────────────────────
 // DetailsPanel
 // ──────────────────────────────────────────────
-class DetailsPanel extends ConsumerWidget {
+class DetailsPanel extends ConsumerStatefulWidget {
   final String? selectedNodeId;
   final VoidCallback? onDetach;
   const DetailsPanel({super.key, this.selectedNodeId, this.onDetach});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DetailsPanel> createState() => _DetailsPanelState();
+}
+
+class _DetailsPanelState extends ConsumerState<DetailsPanel> {
+  bool _isManualOverride = false;
+  bool _manualIsMobile = false;
+
+  @override
+  Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final screenWidth = MediaQuery.sizeOf(context).width;
+        final bool isAutoMobile = screenWidth < 600;
+        final bool isMobileMode = _isManualOverride ? _manualIsMobile : isAutoMobile;
+
         // Scale down proportionally for smaller screens, max out at 280
-        double panelWidth = constraints.maxWidth * 0.85;
-        if (panelWidth > 280) panelWidth = 280;
+        double panelWidth = isMobileMode ? constraints.maxWidth * 0.95 : constraints.maxWidth * 0.85;
+        if (!isMobileMode && panelWidth > 280) panelWidth = 280;
+        if (isMobileMode && panelWidth > 320) panelWidth = 320;
 
         final theme = Theme.of(context);
-        if (selectedNodeId == null) {
-          return Container(
-            width: panelWidth,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-            color: theme.cardColor.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-                color: theme.dividerColor.withValues(alpha: 0.1))),
-        child: const Text('Select a node to view details',
-            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
-      );
-    }
+        if (widget.selectedNodeId == null) {
+          return GestureDetector(
+            onLongPress: () {
+              setState(() {
+                _isManualOverride = true;
+                _manualIsMobile = !isMobileMode;
+              });
+            },
+            child: Container(
+              width: panelWidth,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                  color: theme.cardColor.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(isMobileMode ? 16 : 24),
+                  border: Border.all(
+                      color: theme.dividerColor.withValues(alpha: 0.1))),
+              child: Text(isMobileMode ? 'Select a node' : 'Select a node to view details',
+                  style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey, fontSize: 12)),
+            ),
+          );
+        }
+        
         final activity =
-            ref.watch(activityControllerProvider).activitiesMap[selectedNodeId];
+            ref.watch(activityControllerProvider).activitiesMap[widget.selectedNodeId];
         if (activity == null) return const SizedBox.shrink();
 
         final colorScheme = theme.colorScheme;
-        return Container(
-          width: panelWidth,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-          color: theme.cardColor.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(24),
-          border:
-              Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10))
-          ]),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(children: [
-            Icon(Icons.info_outline, size: 14, color: colorScheme.primary),
-            const SizedBox(width: 8),
-            Text('EXPLORER DETAILS',
-                style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: theme.hintColor)),
-          ]),
-          const Divider(height: 24),
-          Text(activity.name,
-              style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        return GestureDetector(
+          onLongPress: () {
+            setState(() {
+              _isManualOverride = true;
+              _manualIsMobile = !isMobileMode;
+            });
+          },
+          child: Container(
+            width: panelWidth,
+            padding: EdgeInsets.all(isMobileMode ? 12 : 20),
             decoration: BoxDecoration(
-                color: _statusColor(colorScheme, activity.status)
-                    .withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                    color: _statusColor(colorScheme, activity.status)
-                        .withValues(alpha: 0.3))),
-            child: Text(activity.status.name.toUpperCase(),
-                style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: _statusColor(colorScheme, activity.status))),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _stat(context, Icons.access_time, 'Duration',
-                    _formatDuration(activity.totalSeconds)),
-              ),
-              if (activity.type == ActivityType.countBased)
-                Expanded(
-                  child: _stat(context, Icons.numbers, 'Count',
-                      ref.watch(activityControllerProvider).getCountTotalFor(activity.id).toStringAsFixed(0)),
-                ),
-            ],
-          ),
-          if (activity.status != ActivityStatus.completed) ...[
-            const SizedBox(height: 20),
-            Row(
+                color: theme.cardColor.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(24),
+                border:
+                    Border.all(color: theme.dividerColor.withValues(alpha: 0.1)),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: isMobileMode ? 10 : 20,
+                      offset: Offset(0, isMobileMode ? 5 : 10))
+                ]),
+            child: isMobileMode ? _buildMobileContent(context, theme, colorScheme, activity) : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (activity.status == ActivityStatus.paused || activity.status == ActivityStatus.idle)
-                  Expanded(
-                    child: _controlBtn(context, Icons.play_arrow, 'Resume', () {
-                      ref.read(activityControllerProvider.notifier).startActivity(activity.id);
-                    }),
+                Row(children: [
+                  Icon(Icons.info_outline, size: 14, color: colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Text('EXPLORER DETAILS',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          color: theme.hintColor)),
+                ]),
+                const Divider(height: 24),
+                Text(activity.name,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: _statusColor(colorScheme, activity.status)
+                          .withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: _statusColor(colorScheme, activity.status)
+                              .withValues(alpha: 0.3))),
+                  child: Text(activity.status.name.toUpperCase(),
+                      style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: _statusColor(colorScheme, activity.status))),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _stat(context, Icons.access_time, 'Duration',
+                          _formatDuration(activity.totalSeconds)),
+                    ),
+                    if (activity.type == ActivityType.countBased)
+                      Expanded(
+                        child: _stat(context, Icons.numbers, 'Count',
+                            ref.watch(activityControllerProvider).getCountTotalFor(activity.id).toStringAsFixed(0)),
+                      ),
+                  ],
+                ),
+                if (activity.status != ActivityStatus.completed) ...[
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      if (activity.status == ActivityStatus.paused || activity.status == ActivityStatus.idle)
+                        Expanded(
+                          child: _controlBtn(context, Icons.play_arrow, 'Resume', () {
+                            ref.read(activityControllerProvider.notifier).startActivity(activity.id);
+                          }),
+                        ),
+                      if (activity.status == ActivityStatus.running)
+                        Expanded(
+                          child: _controlBtn(context, Icons.pause, 'Pause', () {
+                            ref.read(activityControllerProvider.notifier).pauseActivity(activity.id);
+                          }),
+                        ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _controlBtn(context, Icons.check, 'Finish', () {
+                          ref.read(activityControllerProvider.notifier).completeActivity(activity.id);
+                        }),
+                      ),
+                    ],
                   ),
-                if (activity.status == ActivityStatus.running)
-                  Expanded(
-                    child: _controlBtn(context, Icons.pause, 'Pause', () {
-                      ref.read(activityControllerProvider.notifier).pauseActivity(activity.id);
-                    }),
+                ],
+                if (activity.type == ActivityType.countBased && activity.status != ActivityStatus.completed) ...[
+                  const SizedBox(height: 16),
+                  _CountInputContainer(activityId: activity.id),
+                ],
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        barrierColor: Colors.transparent,
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                        builder: (context) => CreateActivitySheet(parentId: activity.id),
+                      );
+                    },
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('New Activity', style: TextStyle(fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _controlBtn(context, Icons.check, 'Finish', () {
-                    ref.read(activityControllerProvider.notifier).completeActivity(activity.id);
-                  }),
+                ),
+                // Detach button — only visible when node has a parent
+                if (activity.parentId != null && widget.onDetach != null) ...[
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: widget.onDetach,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.link_off, size: 12, color: Colors.red),
+                          SizedBox(width: 6),
+                          Text('Detach from parent',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Center(
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/activity/${activity.id}');
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 14),
+                    label: const Text('Visit Details', style: TextStyle(fontWeight: FontWeight.bold)),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.primary,
+                    ),
+                  ),
                 ),
               ],
             ),
-          ],
-          if (activity.type == ActivityType.countBased && activity.status != ActivityStatus.completed) ...[
-            const SizedBox(height: 16),
-            _CountInputContainer(activityId: activity.id),
-          ],
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  barrierColor: Colors.transparent,
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                  builder: (context) => CreateActivitySheet(parentId: activity.id),
-                );
-              },
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('New Activity', style: TextStyle(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileContent(BuildContext context, ThemeData theme, ColorScheme colorScheme, Activity activity) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                activity.name,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
-          // Detach button — only visible when node has a parent
-          if (activity.parentId != null && onDetach != null) ...[
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: onDetach,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.link_off, size: 12, color: Colors.red),
-                    SizedBox(width: 6),
-                    Text('Detach from parent',
-                        style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold)),
-                  ],
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: _statusColor(colorScheme, activity.status).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: _statusColor(colorScheme, activity.status).withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                activity.status.name.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                  color: _statusColor(colorScheme, activity.status),
                 ),
               ),
             ),
-          ],
-          const SizedBox(height: 12),
-          Center(
-            child: TextButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, '/activity/${activity.id}');
-              },
-              icon: const Icon(Icons.open_in_new, size: 14),
-              label: const Text('Visit Details', style: TextStyle(fontWeight: FontWeight.bold)),
-              style: TextButton.styleFrom(
-                foregroundColor: colorScheme.primary,
-              ),
-            ),
-          ),
           ],
         ),
-      );
-      },
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(Icons.access_time, size: 12, color: theme.hintColor),
+            const SizedBox(width: 4),
+            Text(
+              _formatDuration(activity.totalSeconds),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: theme.hintColor),
+            ),
+            if (activity.type == ActivityType.countBased) ...[
+              const SizedBox(width: 12),
+              Icon(Icons.numbers, size: 12, color: theme.hintColor),
+              const SizedBox(width: 4),
+              Text(
+                ref.watch(activityControllerProvider).getCountTotalFor(activity.id).toStringAsFixed(0),
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: theme.hintColor),
+              ),
+            ],
+          ],
+        ),
+        if (activity.status != ActivityStatus.completed) ...[
+          const SizedBox(height: 8),
+          const Divider(height: 1),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              if (activity.status == ActivityStatus.paused || activity.status == ActivityStatus.idle)
+                IconButton(
+                  icon: const Icon(Icons.play_arrow),
+                  color: colorScheme.primary,
+                  iconSize: 20,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => ref.read(activityControllerProvider.notifier).startActivity(activity.id),
+                ),
+              if (activity.status == ActivityStatus.running)
+                IconButton(
+                  icon: const Icon(Icons.pause),
+                  color: colorScheme.primary,
+                  iconSize: 20,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => ref.read(activityControllerProvider.notifier).pauseActivity(activity.id),
+                ),
+              IconButton(
+                icon: const Icon(Icons.check),
+                color: colorScheme.primary,
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => ref.read(activityControllerProvider.notifier).completeActivity(activity.id),
+              ),
+              if (widget.onDetach != null && activity.parentId != null)
+                IconButton(
+                  icon: const Icon(Icons.link_off),
+                  color: Colors.red,
+                  iconSize: 18,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: widget.onDetach,
+                ),
+              IconButton(
+                icon: const Icon(Icons.open_in_new),
+                color: Colors.blue,
+                iconSize: 18,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () => Navigator.pushNamed(context, '/activity/${activity.id}'),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add_circle),
+                color: colorScheme.primary,
+                iconSize: 22,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    barrierColor: Colors.transparent,
+                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                    builder: (context) => CreateActivitySheet(parentId: activity.id),
+                  );
+                },
+              ),
+            ],
+          ),
+          if (activity.type == ActivityType.countBased) ...[
+            const SizedBox(height: 8),
+            _CountInputContainer(activityId: activity.id),
+          ],
+        ],
+      ],
     );
   }
 
