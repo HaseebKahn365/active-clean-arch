@@ -81,10 +81,10 @@ class _ActivityTreeState extends ConsumerState<ActivityTree>
   }
 
   void _handleDetach(String nodeId) {
-    ref.read(activityControllerProvider.notifier).moveActivity(nodeId, null);
+    ref.read(activityControllerProvider).moveActivity(nodeId, null);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-          content: Text('Node detached to root'),
+          content: Text('Activity moved to root'),
           duration: Duration(seconds: 1)),
     );
   }
@@ -109,7 +109,7 @@ class _ActivityTreeState extends ConsumerState<ActivityTree>
       return;
     }
 
-    ref.read(activityControllerProvider.notifier).moveActivity(sourceId, targetId);
+    ref.read(activityControllerProvider).moveActivity(sourceId, targetId);
     ref.read(dashboardUiProvider.notifier).stopReparenting();
   }
 
@@ -135,13 +135,17 @@ class _ActivityTreeState extends ConsumerState<ActivityTree>
         return Stack(
           children: [
             GestureDetector(
-              onTapDown: (_) {
+              // Only cancel reparenting if there is no reparentingNodeId active.
+              // We use onTap (not onTapDown) so node taps are handled first.
+              onTap: () {
                 if (uiState.reparentingNodeId != null) {
+                  // tapped empty canvas → cancel
                   ref.read(dashboardUiProvider.notifier).stopReparenting();
                 } else {
                   ref.read(dashboardUiProvider.notifier).selectNode(null);
                 }
               },
+              behavior: HitTestBehavior.deferToChild,
               child: InteractiveViewer(
                 transformationController: _transformationController,
                 constrained: false,
@@ -182,6 +186,7 @@ class _ActivityTreeState extends ConsumerState<ActivityTree>
                             isReparenting: isReparenting,
                             onSelect: () {
                               if (uiState.reparentingNodeId != null) {
+                                // Reparenting mode: this tap picks the target
                                 _handleReparentAction(node.activity.id, layout);
                               } else {
                                 ref
@@ -192,11 +197,10 @@ class _ActivityTreeState extends ConsumerState<ActivityTree>
                             onToggle: () => ref
                                 .read(dashboardUiProvider.notifier)
                                 .toggleNodeExpansion(node.activity.id),
-                            onDoubleTap: () => ref
+                            // Long-press activates reparenting mode (clear, unambiguous)
+                            onLongPress: () => ref
                                 .read(dashboardUiProvider.notifier)
                                 .startReparenting(node.activity.id),
-                            onLongPress: () =>
-                                _handleDetach(node.activity.id),
                           ),
                         );
                       }),
@@ -208,7 +212,12 @@ class _ActivityTreeState extends ConsumerState<ActivityTree>
             Positioned(
               top: 24,
               left: 24,
-              child: DetailsPanel(selectedNodeId: uiState.selectedNodeId),
+              child: DetailsPanel(
+                selectedNodeId: uiState.selectedNodeId,
+                onDetach: uiState.selectedNodeId != null
+                    ? () => _handleDetach(uiState.selectedNodeId!)
+                    : null,
+              ),
             ),
             if (uiState.reparentingNodeId != null)
               Positioned(
@@ -245,7 +254,7 @@ class _ActivityTreeState extends ConsumerState<ActivityTree>
         children: [
           const Icon(Icons.account_tree_outlined, color: Colors.white, size: 16),
           const SizedBox(width: 8),
-          const Text('Select target node',
+          const Text('Long-press a node, then tap target',
               style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -272,7 +281,6 @@ class TreeNode extends StatelessWidget {
   final bool isReparenting;
   final VoidCallback onSelect;
   final VoidCallback onToggle;
-  final VoidCallback onDoubleTap;
   final VoidCallback onLongPress;
 
   const TreeNode({
@@ -283,7 +291,6 @@ class TreeNode extends StatelessWidget {
     this.isReparenting = false,
     required this.onSelect,
     required this.onToggle,
-    required this.onDoubleTap,
     required this.onLongPress,
   });
 
@@ -329,7 +336,6 @@ class TreeNode extends StatelessWidget {
         // ── Card body ──────────────────────────────
         GestureDetector(
           onTap: onSelect,
-          onDoubleTap: onDoubleTap,
           onLongPress: onLongPress,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -591,7 +597,8 @@ class TreePainter extends CustomPainter {
 // ──────────────────────────────────────────────
 class DetailsPanel extends ConsumerWidget {
   final String? selectedNodeId;
-  const DetailsPanel({super.key, this.selectedNodeId});
+  final VoidCallback? onDetach;
+  const DetailsPanel({super.key, this.selectedNodeId, this.onDetach});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -666,6 +673,35 @@ class DetailsPanel extends ConsumerWidget {
           const SizedBox(height: 20),
           _stat(context, Icons.access_time, 'Duration',
               _formatDuration(activity.totalSeconds)),
+          // Detach button — only visible when node has a parent
+          if (activity.parentId != null && onDetach != null) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: onDetach,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.link_off, size: 12, color: Colors.red),
+                    SizedBox(width: 6),
+                    Text('Detach from parent',
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
