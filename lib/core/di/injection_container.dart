@@ -8,6 +8,7 @@ import '../../infrastructure/auth/google_auth_service.dart';
 import '../../infrastructure/notifications/notification_service.dart';
 import '../../domain/repositories/activity_repository.dart';
 import '../../data/repositories/sql_activity_repository.dart';
+import '../../infrastructure/services/firestore_sync_service.dart';
 import '../../domain/use_cases/activity/get_breadcrumbs_use_case.dart';
 import '../../domain/use_cases/activity/get_activities_use_case.dart';
 import '../../domain/use_cases/activity/delete_activity_use_case.dart';
@@ -57,6 +58,13 @@ Future<void> init() async {
 
   // Presentation / State Management
   sl.registerLazySingleton(() => AppAuthProvider(sl()));
+  sl.registerLazySingleton(
+    () => FirestoreSyncService(
+      firestore: sl(),
+      auth: sl(),
+      localRepository: sl(),
+    ),
+  );
   sl.registerLazySingleton(
     () => ActivityController(
       getActivitiesUseCase: sl(),

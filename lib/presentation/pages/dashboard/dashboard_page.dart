@@ -13,6 +13,8 @@ import '../backup/backup_page.dart';
 import 'widgets/productivity_containers.dart';
 import 'widgets/tree/activity_tree.dart';
 import '../../providers/dashboard_ui_notifier.dart';
+import '../../../core/di/injection_container.dart';
+import '../../../infrastructure/services/firestore_sync_service.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -143,6 +145,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupPage()));
           },
         ),
+        const Center(child: SyncStatusIndicator()),
         _buildViewModeToggle(context),
         IconButton(
           icon: Icon(Icons.bar_chart_rounded, color: colorScheme.onPrimary),
@@ -344,6 +347,71 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class SyncStatusIndicator extends StatelessWidget {
+  const SyncStatusIndicator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final syncService = sl<FirestoreSyncService>();
+    return ValueListenableBuilder<SyncStatus>(
+      valueListenable: syncService.syncStatus,
+      builder: (context, status, child) {
+        if (status == SyncStatus.idle) return const SizedBox.shrink();
+        
+        IconData icon = Icons.sync;
+        Color color = Colors.white70;
+        String text = '';
+
+        switch (status) {
+          case SyncStatus.syncing:
+            color = Colors.white70;
+            text = 'Syncing...';
+            break;
+          case SyncStatus.success:
+            icon = Icons.cloud_done;
+            color = Colors.greenAccent;
+            text = 'Synced';
+            break;
+          case SyncStatus.error:
+            icon = Icons.error_outline;
+            color = Colors.redAccent;
+            text = 'Error';
+            break;
+          default:
+            return const SizedBox.shrink();
+        }
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.black.withAlpha(40),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (status == SyncStatus.syncing)
+                SizedBox(
+                  width: 10,
+                  height: 10,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: color),
+                )
+              else
+                Icon(icon, size: 12, color: color),
+              const SizedBox(width: 4),
+              Text(
+                text,
+                style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

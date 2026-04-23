@@ -13,6 +13,7 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/theme_notifier.dart';
 import 'presentation/providers/stats_provider.dart';
 import 'infrastructure/notifications/notification_service.dart';
+import 'infrastructure/services/firestore_sync_service.dart';
 import 'application/services/background_service.dart';
 import 'presentation/pages/activity_detail_page.dart';
 import 'data/migrations/event_compression_migration.dart';
@@ -74,6 +75,7 @@ class _ActiveAppState extends ConsumerState<ActiveApp> {
   @override
   void initState() {
     super.initState();
+    di.sl<FirestoreSyncService>(); // Instantiate to start listening
     _requestNotificationPermission();
     _notificationSubscription = di.sl<NotificationService>().onResponse.listen((payload) {
       if (payload != null && payload.isNotEmpty) {

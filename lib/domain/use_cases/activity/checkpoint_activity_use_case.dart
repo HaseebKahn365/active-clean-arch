@@ -45,7 +45,7 @@ class CheckpointActivityUseCase {
         newDuration: lastEvent.newDuration,
       );
 
-      await repository.saveEvent(updatedEvent);
+      await repository.saveEvent(updatedEvent, reason: SaveReason.periodic);
 
       dev.log(
         'Periodic Update: Activity $activityId | Event ${lastEvent.id} | Increment +${deltaSeconds}s | New Total ${updatedEvent.durationDelta}s',
@@ -62,6 +62,7 @@ class CheckpointActivityUseCase {
           previousStatus: ActivityStatus.running,
           nextStatus: ActivityStatus.running,
         ),
+        reason: SaveReason.periodic,
       );
     }
   }

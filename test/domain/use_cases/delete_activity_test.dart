@@ -19,22 +19,22 @@ class MockActivityRepository implements ActivityRepository {
   Future<Activity?> getActivityById(String id) async => activities[id];
 
   @override
-  Future<void> saveActivity(Activity activity, {SaveReason reason = SaveReason.immediate}) async {
+  Future<void> saveActivity(Activity activity, {SaveReason reason = SaveReason.immediate, bool isRemoteUpdate = false}) async {
     activities[activity.id] = activity;
   }
 
   @override
-  Future<void> deleteActivity(String id) async {
+  Future<void> deleteActivity(String id, {bool isRemoteUpdate = false}) async {
     activities.remove(id);
   }
 
   @override
-  Future<void> updateActivity(Activity activity, {SaveReason reason = SaveReason.immediate}) async {
+  Future<void> updateActivity(Activity activity, {SaveReason reason = SaveReason.immediate, bool isRemoteUpdate = false}) async {
     activities[activity.id] = activity;
   }
 
   @override
-  Future<void> saveEvent(ActivityEvent event) async {
+  Future<void> saveEvent(ActivityEvent event, {SaveReason reason = SaveReason.immediate, bool isRemoteUpdate = false}) async {
     events.add(event);
   }
 
@@ -55,7 +55,7 @@ class MockActivityRepository implements ActivityRepository {
   }
 
   @override
-  Future<void> saveCountRecord(CountRecord record) async {}
+  Future<void> saveCountRecord(CountRecord record, {bool isRemoteUpdate = false}) async {}
 
   @override
   Future<List<CountRecord>> getAllCountRecords() async => [];
@@ -64,7 +64,7 @@ class MockActivityRepository implements ActivityRepository {
   Future<List<CountRecord>> getCountRecordsForActivity(String activityId) async => [];
 
   @override
-  Future<void> deleteCountRecord(String id) async {}
+  Future<void> deleteCountRecord(String id, {bool isRemoteUpdate = false}) async {}
 
   @override
   Future<void> clearAllData() async {
