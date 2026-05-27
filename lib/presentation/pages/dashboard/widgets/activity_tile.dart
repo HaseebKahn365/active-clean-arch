@@ -1,4 +1,4 @@
-import 'package:active/presentation/widgets/activity_details_sheet.dart';
+import '../../../widgets/activity_details_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../domain/entities/activity.dart';

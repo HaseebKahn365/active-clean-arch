@@ -1,4 +1,4 @@
-import 'package:active/presentation/providers/activity_manager_provider.dart';
+import '../../providers/activity_manager_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -139,6 +139,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             icon: Icon(Icons.search, color: colorScheme.onPrimary),
             onPressed: _toggleSearch,
           ),
+        IconButton(
+          tooltip: 'AI Chat',
+          icon: Icon(Icons.chat_bubble_outline, color: colorScheme.onPrimary),
+          onPressed: () => Navigator.pushNamed(context, '/chat'),
+        ),
         IconButton(
           icon: Icon(Icons.cloud_upload_outlined, color: colorScheme.onPrimary),
           onPressed: () {

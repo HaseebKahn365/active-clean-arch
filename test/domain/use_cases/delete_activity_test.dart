@@ -1,5 +1,3 @@
-import 'dart:nativewrappers/_internal/vm/lib/ffi_allocation_patch.dart';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:active/domain/entities/activity.dart';
 import 'package:active/domain/entities/activity_event.dart';
@@ -40,19 +38,6 @@ class MockActivityRepository implements ActivityRepository {
 
   @override
   Future<List<ActivityEvent>> getAllEvents() async => List.from(events);
-
-  @override
-  Future<List<ActivityEvent>> getUnsyncedEvents() async {
-    return events.where((e) => !e.isSynced).toList();
-  }
-
-  @override
-  Future<void> markEventAsSynced(String id) async {
-    final index = events.indexWhere((e) => e.id == id);
-    if (index != -1) {
-      // Note: ActivityEvent is immutable
-    }
-  }
 
   @override
   Future<void> saveCountRecord(CountRecord record, {bool isRemoteUpdate = false}) async {}

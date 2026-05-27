@@ -1,5 +1,5 @@
-import '../../../domain/entities/activity.dart';
-import '../../../domain/entities/activity_event.dart';
+import '../../domain/entities/activity.dart';
+import '../../domain/entities/activity_event.dart';
 
 class ActivityEventModel extends ActivityEvent {
   const ActivityEventModel({

@@ -4,20 +4,28 @@ import 'package:flutter/foundation.dart';
 
 class GoogleAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  bool _initialized = false;
 
   Future<User?> signInWithGoogle() async {
     try {
+      if (!_initialized) {
+        await _googleSignIn.initialize();
+        _initialized = true;
+      }
+
       // 1. Trigger the Google Authentication flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate(
+        scopeHint: const ['email', 'profile', 'openid'],
+      );
 
       // 2. Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final googleAuth = googleUser.authentication;
+      final authz = await googleUser.authorizationClient.authorizeScopes(const ['email', 'profile', 'openid']);
 
       // 3. Create a new credential
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
+        accessToken: authz.accessToken,
         idToken: googleAuth.idToken,
       );
 

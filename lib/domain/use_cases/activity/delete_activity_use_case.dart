@@ -1,4 +1,4 @@
-import 'package:active/domain/repositories/activity_repository.dart';
+import '../../repositories/activity_repository.dart';
 import 'pause_activity_use_case.dart';
 
 class DeleteActivityUseCase {

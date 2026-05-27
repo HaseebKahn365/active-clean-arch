@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(data) {
+      return signedIn() && data.userId == request.auth.uid;
+    }
+
+    match /activities/{activityId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, delete: if isOwner(resource.data);
+      allow update: if isOwner(resource.data) && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /activity_events/{eventId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, delete: if isOwner(resource.data);
+      allow update: if isOwner(resource.data) && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /count_records/{recordId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, delete: if isOwner(resource.data);
+      allow update: if isOwner(resource.data) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Backup metadata already used by app
+    match /users/{userId}/backups/{backupId} {
+      allow read, write: if signedIn() && userId == request.auth.uid;
+    }
+  }
+}
+

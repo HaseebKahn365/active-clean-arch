@@ -1,5 +1,5 @@
 import 'dart:convert';
-import '../../../domain/entities/activity.dart';
+import '../../domain/entities/activity.dart';
 
 class ActivityModel extends Activity {
   const ActivityModel({

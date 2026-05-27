@@ -26,6 +26,7 @@ import 'presentation/pages/dashboard/dashboard_page.dart';
 import 'presentation/pages/stats/global_stats_page.dart';
 import 'presentation/pages/stats/activity_stats_page.dart';
 import 'presentation/widgets/mac_swipe_back_navigator.dart';
+import 'presentation/pages/chat/ai_chat_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -114,7 +115,10 @@ class _ActiveAppState extends ConsumerState<ActiveApp> {
 
       builder: (context, child) => MacSwipeBackNavigator(navigatorKey: _navigatorKey, child: child!),
       home: const AuthGate(),
-      routes: {'/stats/global': (context) => const GlobalStatsPage()},
+      routes: {
+        '/stats/global': (context) => const GlobalStatsPage(),
+        '/chat': (context) => const AiChatPage(),
+      },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/stats/activity/') ?? false) {
           final id = settings.name!.replaceFirst('/stats/activity/', '');

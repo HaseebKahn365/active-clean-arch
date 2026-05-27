@@ -36,7 +36,7 @@ class NotificationService {
     );
 
     await _notificationsPlugin.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (details) {
         _onResponse.add(details.payload);
       },
@@ -99,7 +99,13 @@ class NotificationService {
       macOS: const DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: false),
     );
 
-    await _notificationsPlugin.show(id, title, body, platformChannelSpecifics, payload: payload);
+    await _notificationsPlugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: platformChannelSpecifics,
+      payload: payload,
+    );
   }
 
   Future<void> scheduleGoalNotification({
@@ -126,18 +132,18 @@ class NotificationService {
     );
 
     await _notificationsPlugin.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledDate, tz.local),
-      platformChannelSpecifics,
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: tz.TZDateTime.from(scheduledDate, tz.local),
+      notificationDetails: platformChannelSpecifics,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: payload,
     );
   }
 
   Future<void> cancelNotification(int id) async {
-    await _notificationsPlugin.cancel(id);
+    await _notificationsPlugin.cancel(id: id);
   }
 
   Future<void> cancelAll() async {

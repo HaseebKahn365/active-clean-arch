@@ -1,4 +1,4 @@
-import '../../../domain/entities/count_record.dart';
+import '../../domain/entities/count_record.dart';
 
 class CountRecordModel extends CountRecord {
   const CountRecordModel({

@@ -1,65 +1,10 @@
 Analyzing active...                                             
 
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/create_backup_use_case.dart:17:5 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/create_backup_use_case.dart:24:5 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/create_backup_use_case.dart:62:5 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/create_backup_use_case.dart:67:5 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:18:5 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:24:9 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:55:5 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:80:9 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:95:13 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:105:13 • avoid_print
-   info • Don't invoke 'print' in production code • lib/domain/use_cases/backup/restore_backup_use_case.dart:137:5 • avoid_print
-  error • Target of URI doesn't exist: '../providers/activity_provider.dart' • lib/presentation/pages/activity_detail_page.dart:4:8 • uri_does_not_exist
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/activity_detail_page.dart:40:38 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/activity_detail_page.dart:163:38 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/activity_detail_page.dart:205:22 • non_type_as_type_argument
-  error • Target of URI doesn't exist: '../providers/activity_provider.dart' • lib/presentation/pages/add_activity_page.dart:3:8 • uri_does_not_exist
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/add_activity_page.dart:36:28 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/add_activity_page.dart:55:37 • non_type_as_type_argument
-  error • Target of URI doesn't exist: '../../providers/activity_provider.dart' • lib/presentation/pages/backup/backup_page.dart:5:8 • uri_does_not_exist
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/backup/backup_page.dart:161:55 • non_type_as_type_argument
-  error • Target of URI doesn't exist: '../../../providers/activity_provider.dart' • lib/presentation/pages/dashboard/widgets/activity_list.dart:4:8 • uri_does_not_exist
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_list.dart:12:21 • non_type_as_type_argument
-  error • The property 'isLoading' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_list.dart:14:24 • unchecked_use_of_nullable_value
-  error • The property 'roots' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_list.dart:14:48 • unchecked_use_of_nullable_value
-  error • The property 'roots' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_list.dart:18:34 • unchecked_use_of_nullable_value
-  error • The method 'moveActivity' can't be unconditionally invoked because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_list.dart:30:24 • unchecked_use_of_nullable_value
-  error • Target of URI doesn't exist: '../../../providers/activity_provider.dart' • lib/presentation/pages/dashboard/widgets/activity_tile.dart:6:8 • uri_does_not_exist
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:65:24 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:232:88 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:250:37 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:259:37 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:285:35 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:300:24 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:349:41 • non_type_as_type_argument
-  error • The method 'getCumulativeSeconds' can't be unconditionally invoked because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_tile.dart:350:34 • unchecked_use_of_nullable_value
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:354:37 • non_type_as_type_argument
-  error • The property 'activitiesMap' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_tile.dart:354:77 • unchecked_use_of_nullable_value
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:386:46 • non_type_as_type_argument
-  error • The method 'getEffectiveSeconds' can't be unconditionally invoked because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_tile.dart:387:34 • unchecked_use_of_nullable_value
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/activity_tile.dart:418:34 • non_type_as_type_argument
-  error • The method 'getCountTotalFor' can't be unconditionally invoked because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/activity_tile.dart:418:71 • unchecked_use_of_nullable_value
-  error • Target of URI doesn't exist: '../../../providers/activity_provider.dart' • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:5:8 • uri_does_not_exist
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/create_activity_sheet.dart:55:20 • non_type_as_type_argument
-  error • Target of URI doesn't exist: '../../../providers/activity_provider.dart' • lib/presentation/pages/dashboard/widgets/pinned_activity_list.dart:4:8 • uri_does_not_exist
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/pinned_activity_list.dart:13:34 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/pinned_activity_list.dart:56:36 • non_type_as_type_argument
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/pages/dashboard/widgets/pinned_activity_list.dart:118:46 • non_type_as_type_argument
-  error • The method 'getEffectiveSeconds' can't be unconditionally invoked because the receiver can be 'null' • lib/presentation/pages/dashboard/widgets/pinned_activity_list.dart:119:34 • unchecked_use_of_nullable_value
-  error • Target of URI doesn't exist: '../providers/activity_provider.dart' • lib/presentation/widgets/activity_details_sheet.dart:5:8 • uri_does_not_exist
-  error • Undefined class 'ActivityController' • lib/presentation/widgets/activity_details_sheet.dart:13:9 • undefined_class
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/widgets/activity_details_sheet.dart:207:45 • non_type_as_type_argument
-  error • The property 'activitiesMap' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/widgets/activity_details_sheet.dart:209:40 • unchecked_use_of_nullable_value
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/widgets/activity_details_sheet.dart:235:46 • non_type_as_type_argument
-  error • The property 'activitiesMap' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/widgets/activity_details_sheet.dart:237:48 • unchecked_use_of_nullable_value
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/widgets/activity_details_sheet.dart:287:32 • non_type_as_type_argument
-  error • The property 'activitiesMap' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/widgets/activity_details_sheet.dart:288:53 • unchecked_use_of_nullable_value
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/widgets/activity_details_sheet.dart:327:45 • non_type_as_type_argument
-  error • The property 'activitiesMap' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/widgets/activity_details_sheet.dart:329:40 • unchecked_use_of_nullable_value
-  error • The name 'ActivityController' isn't a type, so it can't be used as a type argument • lib/presentation/widgets/activity_details_sheet.dart:426:32 • non_type_as_type_argument
-  error • The property 'activitiesMap' can't be unconditionally accessed because the receiver can be 'null' • lib/presentation/widgets/activity_details_sheet.dart:427:53 • unchecked_use_of_nullable_value
-  error • 'MockActivityRepository.saveActivity' ('Future<void> Function(Activity)') isn't a valid override of 'ActivityRepository.saveActivity' ('Future<void> Function(Activity, {SaveReason reason})') • test/domain/use_cases/delete_activity_test.dart:20:16 • invalid_override
-  error • 'MockActivityRepository.updateActivity' ('Future<void> Function(Activity)') isn't a valid override of 'ActivityRepository.updateActivity' ('Future<void> Function(Activity, {SaveReason reason})') • test/domain/use_cases/delete_activity_test.dart:30:16 • invalid_override
+warning • Unused import: '../../domain/entities/count_record.dart' • lib/infrastructure/ai/ai_chat_service.dart:9:8 • unused_import
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:244:102 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/presentation/pages/dashboard/dashboard_page.dart:251:102 • deprecated_member_use
+   info • 'leftTranslate' is deprecated and shouldn't be used. Use leftTranslateByVector3, leftTranslateByVector4, or leftTranslateByDouble instead • lib/presentation/pages/dashboard/widgets/tree/activity_tree.dart:60:12 • deprecated_member_use
+   info • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • lib/presentation/pages/dashboard/widgets/tree/activity_tree.dart:61:12 • deprecated_member_use
+   info • 'leftTranslate' is deprecated and shouldn't be used. Use leftTranslateByVector3, leftTranslateByVector4, or leftTranslateByDouble instead • lib/presentation/pages/dashboard/widgets/tree/activity_tree.dart:62:12 • deprecated_member_use
+   info • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • lib/presentation/pages/dashboard/widgets/tree/activity_tree.dart:373:40 • deprecated_member_use
 

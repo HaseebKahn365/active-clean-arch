@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'package:active/application/services/activity_timer_service.dart';
-import 'package:active/infrastructure/notifications/notification_service.dart';
+import '../../application/services/activity_timer_service.dart';
+import '../../infrastructure/notifications/notification_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/activity.dart';

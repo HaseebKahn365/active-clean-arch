@@ -82,4 +82,22 @@ class Activity extends Equatable {
     createdAt,
     updatedAt,
   ];
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'isPinned': isPinned,
+      'parentId': parentId,
+      'childrenIds': childrenIds,
+      'status': status.name,
+      'startedAt': startedAt?.toIso8601String(),
+      'totalSeconds': totalSeconds,
+      'goalSeconds': goalSeconds,
+      'type': type.name,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
 }

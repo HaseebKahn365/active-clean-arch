@@ -1,4 +1,4 @@
-import 'package:active/presentation/widgets/mac_swipe_back_navigator.dart';
+import '../widgets/mac_swipe_back_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/activity.dart';

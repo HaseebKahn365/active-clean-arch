@@ -35,6 +35,7 @@ import '../../presentation/providers/activity_manager_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
 import '../../presentation/providers/stats_provider.dart';
 import '../../application/services/activity_timer_service.dart';
+import '../../infrastructure/ai/ai_chat_service.dart';
 
 final sl = GetIt.instance;
 
@@ -85,6 +86,26 @@ Future<void> init() async {
       clearAllDataUseCase: sl(),
       timerService: sl(),
       notificationService: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(
+    () => AiChatService(
+      localActivitiesProvider: () => sl<ActivityController>().activitiesMap,
+      localAddCount: (activityId, value) => sl<ActivityController>().addCount(activityId, value),
+      localStartActivity: (activityId) => sl<ActivityController>().startActivity(activityId),
+      localPauseActivity: (activityId) => sl<ActivityController>().pauseActivity(activityId),
+      localCompleteActivity: (activityId) => sl<ActivityController>().completeActivity(activityId),
+      localCreateActivity: (name, {parentId}) => sl<ActivityController>().createActivity(name, parentId: parentId),
+      localUpdateActivity: (activityId, {name}) => sl<ActivityController>().updateActivity(activityId, name: name),
+      localMoveActivity: (activityId, newParentId) => sl<ActivityController>().moveActivity(activityId, newParentId),
+      localDeleteActivity: (activityId) => sl<ActivityController>().deleteActivity(activityId),
+      localGetCountRecords: (activityId) => sl<ActivityRepository>().getCountRecordsForActivity(activityId),
+      localGetActivityEvents: (activityId) => sl<ActivityRepository>().getAllEvents().then((events) => events.where((e) => e.activityId == activityId).toList()),
+      localGetEffectiveSeconds: (activityId) => sl<ActivityController>().getEffectiveSeconds(activityId),
+      localGetCountTotal: (activityId) => sl<ActivityController>().getCountTotalFor(activityId),
+      localGetAllCountRecords: () => sl<ActivityRepository>().getAllCountRecords(),
+      localGetAllEvents: () => sl<ActivityRepository>().getAllEvents(),
     ),
   );
 
