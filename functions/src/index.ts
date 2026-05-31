@@ -9,6 +9,7 @@ import { err, type ToolEnvelope } from "./shared/envelope";
 
 initializeApp();
 const db = getFirestore();
+const SESSION_CONTROL_COLLECTION = "ai_session_controls";
 
 function wrap<TInput>(
   toolName: string,
@@ -16,9 +17,17 @@ function wrap<TInput>(
 ) {
   return onCall({ cors: true }, async (request): Promise<ToolEnvelope> => {
     const uid = request.auth?.uid;
+    const sessionId = typeof request.data?.sessionId === "string" ? request.data.sessionId : undefined;
     const auditId = uuidv4();
     const startedAt = Date.now();
     try {
+      if (uid && sessionId) {
+        const ctrlSnap = await db.collection(SESSION_CONTROL_COLLECTION).doc(`${uid}:${sessionId}`).get();
+        if (ctrlSnap.exists && ctrlSnap.data()?.aborted === true) {
+          const aborted = err("ABORTED", "AI session was halted by user.", false);
+          return { ...aborted, auditId };
+        }
+      }
       const result = await handler(uid, request.data as TInput);
       const withAudit = { ...result, auditId };
       await db.collection("ai_tool_audits").add({
@@ -54,6 +63,24 @@ function wrap<TInput>(
     }
   });
 }
+
+export const abortAiSession = onCall({ cors: true }, async (request): Promise<ToolEnvelope> => {
+  const uid = request.auth?.uid;
+  const sessionId = typeof request.data?.sessionId === "string" ? request.data.sessionId.trim() : "";
+  if (!uid) return err("UNAUTHENTICATED", "Sign-in is required.", false);
+  if (!sessionId) return err("INVALID_ARGUMENT", "sessionId is required.", false);
+
+  await db.collection(SESSION_CONTROL_COLLECTION).doc(`${uid}:${sessionId}`).set({
+    uid,
+    sessionId,
+    aborted: true,
+    abortedAt: new Date().toISOString(),
+  });
+  return {
+    ok: true,
+    data: { sessionId, aborted: true },
+  };
+});
 
 // State inspection
 export const getTreeSnapshot = wrap("getTreeSnapshot", activityTools.getTreeSnapshot);

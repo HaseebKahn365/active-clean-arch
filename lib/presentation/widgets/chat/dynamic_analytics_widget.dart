@@ -1,5 +1,7 @@
 import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import '../../../infrastructure/ai/analytics_markdown_fallback.dart';
 import '../../../infrastructure/ai/analytics_widget_models.dart';
 import 'analytics_widgets/analytics_widget_error_card.dart';
 import 'analytics_widgets/bar_chart_widget.dart';
@@ -10,7 +12,12 @@ import 'analytics_widgets/line_chart_widget.dart';
 import 'analytics_widgets/metric_card_widget.dart';
 
 /// Top-level router that reads a raw widget payload map, validates it,
-/// and delegates to the correct sub-widget. Shows an error card on failure.
+/// and delegates to the correct sub-widget.
+///
+/// When a widget cannot be rendered, this never shows a bare error — it
+/// degrades to a markdown summary built from the payload (or an embedded
+/// `__fallbackMarkdown`). The error card is only used when there is genuinely
+/// no usable data.
 ///
 /// Usage inside the chat list:
 /// ```dart
@@ -24,16 +31,20 @@ class DynamicAnalyticsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = payload['widgetType']?.toString() ?? 'unknown';
-    final title = payload['title']?.toString() ?? '';
+    dev.log("WIDGET RENDER START: $type");
 
-    dev.log("AI WIDGET RENDER: type=$type title=$title");
-
-    Widget buildError(String message) {
+    Widget buildFallback(String reason) {
+      dev.log('WIDGET FALLBACK: $reason');
+      final markdown =
+          payload['__fallbackMarkdown']?.toString() ??
+          AnalyticsMarkdownFallbackRenderer.render(widgetPayload: payload);
       return Align(
         alignment: Alignment.centerLeft,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6),
-          child: AnalyticsWidgetErrorCard(reason: message),
+          child: (markdown != null && markdown.trim().isNotEmpty)
+              ? _MarkdownFallbackCard(markdown: markdown)
+              : AnalyticsWidgetErrorCard(reason: reason),
         ),
       );
     }
@@ -42,15 +53,12 @@ class DynamicAnalyticsWidget extends StatelessWidget {
       final parsed = AnalyticsWidgetPayload.fromJson(payload);
 
       if (parsed == null) {
-        dev.log("AI WIDGET ERROR: parsed null for type=$type title=$title");
-        return buildError('Could not render "$type" widget — required data is missing.');
+        return buildFallback('reason=parsed null for type=$type');
       }
 
-      // Deep payload validation
       final validationError = _validatePayload(parsed);
       if (validationError != null) {
-        dev.log("AI WIDGET VALIDATION FAILURE: $validationError");
-        return buildError(validationError);
+        return buildFallback(validationError);
       }
 
       return Align(
@@ -60,9 +68,9 @@ class DynamicAnalyticsWidget extends StatelessWidget {
           child: _buildWidget(parsed),
         ),
       );
-    } catch (e, stack) {
-      dev.log("AI WIDGET EXCEPTION during parsing: $e\n$stack");
-      return buildError('Failed to display widget due to malformed payload.');
+    } catch (e) {
+      dev.log('WIDGET RENDER EXCEPTION: $e');
+      return buildFallback('render exception: $e');
     }
   }
 
@@ -125,5 +133,34 @@ class DynamicAnalyticsWidget extends StatelessWidget {
       LeaderboardPayload p => LeaderboardWidget(payload: p),
       ComparisonSummaryPayload p => ComparisonSummaryWidget(payload: p),
     };
+  }
+}
+
+/// Renders a markdown summary used when a widget cannot be displayed but the
+/// underlying analytics data is still available.
+class _MarkdownFallbackCard extends StatelessWidget {
+  final String markdown;
+
+  const _MarkdownFallbackCard({required this.markdown});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 520),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: MarkdownBody(
+        data: markdown,
+        selectable: true,
+        styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+          p: theme.textTheme.bodyMedium,
+          tableBody: theme.textTheme.bodySmall,
+        ),
+      ),
+    );
   }
 }

@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAnalytics = exports.stopActivity = exports.pauseActivity = exports.startActivity = exports.deleteNode = exports.moveNode = exports.updateNode = exports.createNode = exports.clearAllData = exports.completeActivity = exports.checkpointActivity = exports.updateActivityDuration = exports.togglePin = exports.getBreadcrumbs = exports.getActivityTotal = exports.addCount = exports.searchNodes = exports.getNode = exports.getRunningActivities = exports.getActivityNamesYaml = exports.getTreeSnapshot = void 0;
+exports.getAnalytics = exports.stopActivity = exports.pauseActivity = exports.startActivity = exports.deleteNode = exports.moveNode = exports.updateNode = exports.createNode = exports.clearAllData = exports.completeActivity = exports.checkpointActivity = exports.updateActivityDuration = exports.togglePin = exports.getBreadcrumbs = exports.getActivityTotal = exports.addCount = exports.searchNodes = exports.getNode = exports.getRunningActivities = exports.getActivityNamesYaml = exports.getTreeSnapshot = exports.abortAiSession = void 0;
 const app_1 = require("firebase-admin/app");
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-admin/firestore");
@@ -43,12 +43,21 @@ const analyticsTools = __importStar(require("./tools/analytics_tools"));
 const envelope_1 = require("./shared/envelope");
 (0, app_1.initializeApp)();
 const db = (0, firestore_1.getFirestore)();
+const SESSION_CONTROL_COLLECTION = "ai_session_controls";
 function wrap(toolName, handler) {
     return (0, https_1.onCall)({ cors: true }, async (request) => {
         const uid = request.auth?.uid;
+        const sessionId = typeof request.data?.sessionId === "string" ? request.data.sessionId : undefined;
         const auditId = (0, uuid_1.v4)();
         const startedAt = Date.now();
         try {
+            if (uid && sessionId) {
+                const ctrlSnap = await db.collection(SESSION_CONTROL_COLLECTION).doc(`${uid}:${sessionId}`).get();
+                if (ctrlSnap.exists && ctrlSnap.data()?.aborted === true) {
+                    const aborted = (0, envelope_1.err)("ABORTED", "AI session was halted by user.", false);
+                    return { ...aborted, auditId };
+                }
+            }
             const result = await handler(uid, request.data);
             const withAudit = { ...result, auditId };
             await db.collection("ai_tool_audits").add({
@@ -90,6 +99,24 @@ function wrap(toolName, handler) {
         }
     });
 }
+exports.abortAiSession = (0, https_1.onCall)({ cors: true }, async (request) => {
+    const uid = request.auth?.uid;
+    const sessionId = typeof request.data?.sessionId === "string" ? request.data.sessionId.trim() : "";
+    if (!uid)
+        return (0, envelope_1.err)("UNAUTHENTICATED", "Sign-in is required.", false);
+    if (!sessionId)
+        return (0, envelope_1.err)("INVALID_ARGUMENT", "sessionId is required.", false);
+    await db.collection(SESSION_CONTROL_COLLECTION).doc(`${uid}:${sessionId}`).set({
+        uid,
+        sessionId,
+        aborted: true,
+        abortedAt: new Date().toISOString(),
+    });
+    return {
+        ok: true,
+        data: { sessionId, aborted: true },
+    };
+});
 // State inspection
 exports.getTreeSnapshot = wrap("getTreeSnapshot", activityTools.getTreeSnapshot);
 exports.getActivityNamesYaml = wrap("getActivityNamesYaml", activityTools.getActivityNamesYaml);

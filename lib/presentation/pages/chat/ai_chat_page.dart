@@ -79,7 +79,10 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
 
     final matches = normalized.isEmpty
         ? all.take(8).toList()
-        : all.where((a) => a.name.toLowerCase().contains(normalized)).take(8).toList();
+        : all
+              .where((a) => a.name.toLowerCase().contains(normalized))
+              .take(8)
+              .toList();
 
     setState(() {
       _mentionStart = at;
@@ -136,16 +139,22 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     final theme = Theme.of(context);
     final dashboardState = ref.watch(dashboardUiProvider);
     final selectedId = dashboardState.selectedNodeId;
-    final selectedActivity = selectedId != null ? _activityController.activitiesMap[selectedId] : null;
+    final selectedActivity = selectedId != null
+        ? _activityController.activitiesMap[selectedId]
+        : null;
 
     // Build context map for AI
     final appContext = {
       'selectedActivityId': selectedId,
       'selectedActivityName': selectedActivity?.name,
       'selectedActivityStatus': selectedActivity?.status.toString(),
-      'currentView': dashboardState.viewMode == DashboardViewMode.tree ? 'tree' : 'list',
+      'currentView': dashboardState.viewMode == DashboardViewMode.tree
+          ? 'tree'
+          : 'list',
       'todaySummary': {
-        'runningCount': _activityController.activitiesMap.values.where((a) => a.status == ActivityStatus.running).length,
+        'runningCount': _activityController.activitiesMap.values
+            .where((a) => a.status == ActivityStatus.running)
+            .length,
         // Add more summary info if needed
       },
     };
@@ -168,6 +177,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
           appBar: AppBar(
             title: const Text('AI Chat'),
             actions: [
+              IconButton(
+                tooltip: 'Halt',
+                onPressed: _chat.isBusy ? _chat.haltProcessing : null,
+                icon: const Icon(Icons.stop_circle_outlined),
+              ),
               IconButton(
                 tooltip: 'Clear',
                 onPressed: _chat.isBusy ? null : _chat.reset,
@@ -199,15 +213,24 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     }
 
                     final isUser = m.role == AiChatRole.user;
-                    final bg = isUser ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest;
-                    final fg = isUser ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface;
-                    final align = isUser ? Alignment.centerRight : Alignment.centerLeft;
+                    final bg = isUser
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest;
+                    final fg = isUser
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurface;
+                    final align = isUser
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft;
 
                     return Align(
                       alignment: align,
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         constraints: const BoxConstraints(maxWidth: 520),
                         decoration: BoxDecoration(
                           color: bg,
@@ -216,27 +239,44 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                         child: MarkdownBody(
                           data: m.text,
                           selectable: true,
-                          styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                            p: theme.textTheme.bodyMedium?.copyWith(color: fg),
-                            strong: theme.textTheme.bodyMedium?.copyWith(color: fg, fontWeight: FontWeight.bold),
-                            em: theme.textTheme.bodyMedium?.copyWith(color: fg, fontStyle: FontStyle.italic),
-                            code: theme.textTheme.bodyMedium?.copyWith(
-                              color: fg,
-                              backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                              fontFamily: 'monospace',
-                            ),
-                            codeblockDecoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
+                          styleSheet: MarkdownStyleSheet.fromTheme(theme)
+                              .copyWith(
+                                p: theme.textTheme.bodyMedium?.copyWith(
+                                  color: fg,
+                                ),
+                                strong: theme.textTheme.bodyMedium?.copyWith(
+                                  color: fg,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                em: theme.textTheme.bodyMedium?.copyWith(
+                                  color: fg,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                                code: theme.textTheme.bodyMedium?.copyWith(
+                                  color: fg,
+                                  backgroundColor: theme
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withValues(alpha: 0.5),
+                                  fontFamily: 'monospace',
+                                ),
+                                codeblockDecoration: BoxDecoration(
+                                  color: theme
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
                         ),
                       ),
                     );
                   },
                 ),
               ),
-              if (!_chat.isBusy && _mentionStart != null && _mentionMatches.isNotEmpty)
+              if (!_chat.isBusy &&
+                  _mentionStart != null &&
+                  _mentionMatches.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                   child: _MentionPicker(
@@ -258,7 +298,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                           textInputAction: TextInputAction.send,
                           onSubmitted: (_) => _send(),
                           decoration: const InputDecoration(
-                            hintText: 'Ask Active… (type @ to mention an activity)',
+                            hintText:
+                                'Ask Active… (type @ to mention an activity)',
                             border: OutlineInputBorder(),
                           ),
                         ),
@@ -304,14 +345,23 @@ class _MentionPicker extends StatelessWidget {
         child: ListView.separated(
           shrinkWrap: true,
           itemCount: matches.length,
-          separatorBuilder: (_, _) => Divider(height: 1, color: theme.dividerColor.withValues(alpha: 0.25)),
+          separatorBuilder: (_, _) => Divider(
+            height: 1,
+            color: theme.dividerColor.withValues(alpha: 0.25),
+          ),
           itemBuilder: (context, index) {
             final a = matches[index];
             return ListTile(
               dense: true,
               leading: const Icon(Icons.account_tree_outlined, size: 18),
               title: Text(a.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-              subtitle: query.isEmpty ? null : Text('id: ${a.id}', maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: query.isEmpty
+                  ? null
+                  : Text(
+                      'id: ${a.id}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
               onTap: () => onPick(a),
             );
           },
@@ -332,23 +382,39 @@ class _ToolCallCard extends StatelessWidget {
     final name = payload['name']?.toString() ?? 'tool';
     final status = payload['status']?.toString() ?? 'unknown';
     final result = payload['result'] as Map?;
+    final statusMessage = payload['message']?.toString();
 
     Color statusColor;
     IconData statusIcon;
     String statusText = status;
 
     switch (status) {
+      case 'pending':
+        statusColor = Colors.blueGrey;
+        statusIcon = Icons.schedule;
+        statusText = 'Pending';
+        break;
+      case 'acquiring_parameters':
+        statusColor = Colors.deepPurple;
+        statusIcon = Icons.tune;
+        statusText = 'Acquiring parameters';
+        break;
       case 'running':
         statusColor = Colors.orange;
         statusIcon = Icons.sync;
-        statusText = 'Running...';
+        statusText = 'Running';
+        break;
+      case 'retrying':
+        statusColor = Colors.amber.shade700;
+        statusIcon = Icons.refresh;
+        statusText = 'Retrying';
         break;
       case 'success':
         statusColor = Colors.green;
         statusIcon = Icons.check_circle;
         statusText = 'Success';
         break;
-      case 'error':
+      case 'failed':
         statusColor = Colors.red;
         statusIcon = Icons.error;
         statusText = 'Failed';
@@ -359,7 +425,10 @@ class _ToolCallCard extends StatelessWidget {
     }
 
     final activityName = result?['activityName']?.toString();
-    final messageText = result?['message']?.toString() ?? (status == 'running' ? 'Executing $name...' : null);
+    final messageText =
+        statusMessage ??
+        result?['message']?.toString() ??
+        (status == 'running' ? 'Executing $name...' : null);
 
     return Align(
       alignment: Alignment.centerLeft,
@@ -396,7 +465,11 @@ class _ToolCallCard extends StatelessWidget {
                 const Spacer(),
                 Text(
                   statusText,
-                  style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
@@ -404,20 +477,21 @@ class _ToolCallCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 activityName,
-                style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ],
             if (messageText != null) ...[
               const SizedBox(height: 4),
-              Text(
-                messageText,
-                style: theme.textTheme.bodySmall,
-              ),
+              Text(messageText, style: theme.textTheme.bodySmall),
             ],
-            if (status == 'error' && result?['error'] != null) ...[
+            if (status == 'failed' && result != null) ...[
               const SizedBox(height: 4),
               Text(
-                result!['error']['message']?.toString() ?? 'Unknown error',
+                result['error']?['message']?.toString() ??
+                    result['message']?.toString() ??
+                    'Unknown error',
                 style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
               ),
             ],
@@ -427,4 +501,3 @@ class _ToolCallCard extends StatelessWidget {
     );
   }
 }
-
