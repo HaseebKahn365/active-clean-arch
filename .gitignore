@@ -1,6 +1,7 @@
 # Ignore all files and directories except lib, test and pubspec.yaml
-/.DS_Store
+.DS_Store
 /.dart_tool/
+/functions/node_modules/
 /.flutter-plugins-dependencies
 /.idea/
 /.metadata
