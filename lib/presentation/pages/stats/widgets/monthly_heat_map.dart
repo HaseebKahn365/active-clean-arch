@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:active/presentation/pages/home/models/activity.dart';
+import 'package:active/presentation/theme/app_theme.dart';
 
 class MonthlyHeatMap extends StatelessWidget {
   const MonthlyHeatMap({
@@ -42,7 +43,6 @@ class MonthlyHeatMap extends StatelessWidget {
   ];
 
   /// Intensity ramp: red (lowest) → orange → yellow → green (highest).
-  /// Saturated throughout so neighbouring days stay distinguishable.
   static const List<Color> intensityRamp = [
     Color(0xFFE53935), // red
     Color(0xFFFB8C00), // orange
@@ -52,17 +52,11 @@ class MonthlyHeatMap extends StatelessWidget {
 
   /// Colour for a day holding [qty], scaled across the month's own
   /// [minPositive]..[maxPositive] range.
-  ///
-  /// Scaling to the observed range rather than to zero is what makes the
-  /// gradient legible: a month of 40..50 spans the full ramp instead of
-  /// collapsing into one shade near the top.
   static Color colorForQuantity({
     required int qty,
     required int minPositive,
     required int maxPositive,
   }) {
-    // A single distinct value has no range to interpolate across; show it at
-    // full strength rather than arbitrarily calling it "lowest".
     if (maxPositive <= minPositive) return intensityRamp.last;
 
     final t = ((qty - minPositive) / (maxPositive - minPositive)).clamp(
@@ -72,8 +66,7 @@ class MonthlyHeatMap extends StatelessWidget {
     return sampleRamp(t);
   }
 
-  /// Samples [intensityRamp] at [t] in 0..1, interpolating between adjacent
-  /// stops so the transition red→orange→yellow→green is continuous.
+  /// Samples [intensityRamp] at [t] in 0..1.
   static Color sampleRamp(double t) {
     final clamped = t.clamp(0.0, 1.0);
     if (clamped >= 1.0) return intensityRamp.last;
@@ -88,8 +81,7 @@ class MonthlyHeatMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isCount = activityType == ActivityType.count;
     final unit = isCount ? 'count' : 'min';
 
@@ -97,11 +89,7 @@ class MonthlyHeatMap extends StatelessWidget {
     final month = currentMonth.month;
 
     final daysInMonth = DateTime(year, month + 1, 0).day;
-    final firstWeekday = DateTime(
-      year,
-      month,
-      1,
-    ).weekday; // 1 = Mon ... 7 = Sun
+    final firstWeekday = DateTime(year, month, 1).weekday; // 1 = Mon ... 7 = Sun
     final leadingEmpty = firstWeekday - 1;
 
     final positives = dailyTotals.values.where((v) => v > 0);
@@ -110,11 +98,10 @@ class MonthlyHeatMap extends StatelessWidget {
 
     Color getCellColor(int? qty) {
       if (qty == null || qty == 0) {
-        return colorScheme.surfaceContainerLow;
+        return isDark ? const Color(0xFF1B1D28) : const Color(0xFFF0F0F1);
       }
       if (qty < 0) {
-        // Corrections sit outside the ramp: neutral grey, not "lowest".
-        return colorScheme.surfaceContainerHighest;
+        return isDark ? const Color(0xFF2E1C20) : const Color(0xFFE4E4E7);
       }
       return colorForQuantity(
         qty: qty,
@@ -125,14 +112,11 @@ class MonthlyHeatMap extends StatelessWidget {
 
     Color getCellTextColor(int? qty) {
       if (qty == null || qty == 0) {
-        return colorScheme.onSurfaceVariant;
+        return AppColors.getTextSubtle(isDark);
       }
       if (qty < 0) {
-        return colorScheme.onSurfaceVariant;
+        return AppColors.getTextSecondary(isDark);
       }
-      // Yellow/orange mid-ramp needs dark text; red and green need light.
-      // Decide from the rendered colour's own luminance rather than the
-      // position on the ramp, so it stays correct if the ramp changes.
       final background = getCellColor(qty);
       return background.computeLuminance() > 0.5
           ? Colors.black87
@@ -150,191 +134,258 @@ class MonthlyHeatMap extends StatelessWidget {
     }
 
     return GestureDetector(
-      // Horizontal-only so the enclosing vertical scroll still works.
       onHorizontalDragEnd: (details) {
         final velocity = details.primaryVelocity ?? 0;
-        // Ignore hesitant drags; require a deliberate flick.
         if (velocity.abs() < 100) return;
-        // Swiping left moves forward in time, matching a calendar's feel.
         if (velocity < 0) {
           goToNextMonth();
         } else {
           goToPreviousMonth();
         }
       },
-      child: Card(
-        margin: EdgeInsets.zero,
-        clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Month navigation header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${_monthNames[month - 1]} $year',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.getSurfaceCard(isDark),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.getBorderCard(isDark),
+            width: 1,
+          ),
+        ),
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Month navigation header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  transitionBuilder: (child, anim) => FadeTransition(
+                    opacity: anim,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.2),
+                        end: Offset.zero,
+                      ).animate(anim),
+                      child: child,
                     ),
                   ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left, size: 22),
-                        visualDensity: VisualDensity.compact,
+                  child: Text(
+                    '${_monthNames[month - 1]} $year',
+                    key: ValueKey('$month-$year'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.getTextPrimary(isDark),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.getBorderSubtle(isDark),
+                          width: 1,
+                        ),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.chevron_left, size: 18),
+                        padding: EdgeInsets.zero,
+                        color: AppColors.getTextPrimary(isDark),
                         onPressed: goToPreviousMonth,
                         tooltip: 'Previous month',
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right, size: 22),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: isCurrentOrFutureMonth
-                            ? null
-                            : goToNextMonth,
-                        tooltip: isCurrentOrFutureMonth ? null : 'Next month',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Weekday headers (M, T, W, T, F, S, S)
-              Row(
-                children: List.generate(7, (i) {
-                  return Expanded(
-                    child: Center(
-                      child: Text(
-                        _weekDayHeaders[i],
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.bold,
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.getBorderSubtle(isDark),
+                          width: 1,
                         ),
                       ),
+                      child: IconButton(
+                        icon: const Icon(Icons.chevron_right, size: 18),
+                        padding: EdgeInsets.zero,
+                        color: isCurrentOrFutureMonth ? AppColors.getTextSubtle(isDark) : AppColors.getTextPrimary(isDark),
+                        onPressed: isCurrentOrFutureMonth ? null : goToNextMonth,
+                        tooltip: isCurrentOrFutureMonth ? null : 'Next month',
+                      ),
                     ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 8),
-
-              // Heat Map Calendar Grid
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 7,
-                  mainAxisSpacing: 4,
-                  crossAxisSpacing: 4,
-                  childAspectRatio: 1.0,
+                  ],
                 ),
-                itemCount: leadingEmpty + daysInMonth,
-                itemBuilder: (context, index) {
-                  if (index < leadingEmpty) {
-                    return const SizedBox.shrink();
-                  }
+              ],
+            ),
+            const SizedBox(height: 14),
 
-                  final dayNumber = index - leadingEmpty + 1;
-                  final qty = dailyTotals[dayNumber];
-                  final cellColor = getCellColor(qty);
-                  final textColor = getCellTextColor(qty);
+            // Weekday headers (M, T, W, T, F, S, S)
+            Row(
+              children: List.generate(7, (i) {
+                return Expanded(
+                  child: Center(
+                    child: Text(
+                      _weekDayHeaders[i],
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.getTextMuted(isDark),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 8),
 
-                  final isToday =
-                      DateTime.now().year == year &&
-                      DateTime.now().month == month &&
-                      DateTime.now().day == dayNumber;
+            // Heat Map Calendar Grid with animated month transition
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 240),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
+              child: KeyedSubtree(
+                key: ValueKey('grid_$year-$month'),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    mainAxisSpacing: 5,
+                    crossAxisSpacing: 5,
+                    childAspectRatio: 1.0,
+                  ),
+                  itemCount: leadingEmpty + daysInMonth,
+                  itemBuilder: (context, index) {
+                    if (index < leadingEmpty) {
+                      return const SizedBox.shrink();
+                    }
 
-                  return Tooltip(
-                    message: qty != null && qty != 0
-                        ? 'Day $dayNumber: $qty $unit'
-                        : 'Day $dayNumber: No activity',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: cellColor,
-                        borderRadius: BorderRadius.circular(6),
-                        border: isToday
-                            ? Border.all(color: colorScheme.primary, width: 1.5)
-                            : Border.all(
-                                color: colorScheme.outline.withValues(
-                                  alpha: 0.1,
+                    final dayNumber = index - leadingEmpty + 1;
+                    final qty = dailyTotals[dayNumber];
+                    final cellColor = getCellColor(qty);
+                    final textColor = getCellTextColor(qty);
+
+                    final isToday =
+                        DateTime.now().year == year &&
+                        DateTime.now().month == month &&
+                        DateTime.now().day == dayNumber;
+
+                    return Tooltip(
+                      message: qty != null && qty != 0
+                          ? 'Day $dayNumber: $qty $unit'
+                          : 'Day $dayNumber: No activity',
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOutCubic,
+                        decoration: BoxDecoration(
+                          color: cellColor,
+                          borderRadius: BorderRadius.circular(10),
+                          border: isToday
+                              ? Border.all(color: AppColors.goldAccent, width: 2.0)
+                              : null,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  '$dayNumber',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor,
+                                    height: 1.0,
+                                  ),
                                 ),
                               ),
-                      ),
-                      padding: const EdgeInsets.all(2),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '$dayNumber',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: textColor,
                             ),
-                          ),
-                          if (qty != null && qty != 0) ...[
-                            Text(
-                              qty > 0 ? '+$qty' : '$qty',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
-                                color: textColor,
+                            if (qty != null && qty != 0) ...[
+                              const SizedBox(height: 1),
+                              Flexible(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    qty > 0 ? '+$qty' : '$qty',
+                                    style: TextStyle(
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: textColor,
+                                      height: 1.0,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-              const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 14),
 
-              // Legend: continuous ramp labelled with the month's own range.
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (maxPositive > 0) ...[
-                    Text(
-                      '$minPositive',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 10,
-                      ),
+            // Legend
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (maxPositive > 0) ...[
+                  Text(
+                    '$minPositive',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.getTextMuted(isDark),
                     ),
-                    const SizedBox(width: 5),
-                    Container(
-                      width: 72,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(3),
-                        gradient: const LinearGradient(colors: intensityRamp),
-                      ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    width: 72,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      gradient: const LinearGradient(colors: intensityRamp),
                     ),
-                    const SizedBox(width: 5),
-                    Text(
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
                       '$maxPositive $unit',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
                         fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.getTextMuted(isDark),
                       ),
                     ),
-                  ] else
-                    Text(
-                      'No activity this month',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 10,
-                      ),
+                  ),
+                ] else
+                  Text(
+                    'No activity this month',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.getTextMuted(isDark),
                     ),
-                ],
-              ),
-            ],
-          ),
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
     );

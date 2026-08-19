@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:active/presentation/pages/agent/models/pending_action.dart';
+import 'package:active/presentation/theme/app_theme.dart';
 
 /// Confirmation card for a destructive action the agent proposed.
 /// Nothing is deleted until [onConfirm] fires.
@@ -22,24 +23,23 @@ class ConfirmActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (resolved != null) {
       final confirmed = resolved == ConfirmOutcome.confirmed;
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(12),
+          color: AppColors.getSurfaceSubtle(isDark),
+          borderRadius: BorderRadius.circular(999),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              confirmed ? Icons.check_circle : Icons.cancel_outlined,
+              confirmed ? Icons.check_circle_rounded : Icons.cancel_outlined,
               size: 16,
-              color: confirmed ? colorScheme.error : colorScheme.onSurfaceVariant,
+              color: confirmed ? AppColors.error : AppColors.getTextSecondary(isDark),
             ),
             const SizedBox(width: 8),
             Flexible(
@@ -47,14 +47,19 @@ class ConfirmActionCard extends StatelessWidget {
                 confirmed
                     ? 'Deleted "${action.targetName}"'
                     : 'Kept "${action.targetName}"',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.getTextSecondary(isDark),
                 ),
               ),
             ),
           ],
         ),
-      );
+      )
+        .animate()
+        .fadeIn(duration: 200.ms)
+        .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1), curve: Curves.easeOutCubic);
     }
 
     final count = action.recordCount ?? 0;
@@ -63,26 +68,26 @@ class ConfirmActionCard extends StatelessWidget {
       constraints: BoxConstraints(
         maxWidth: MediaQuery.of(context).size.width * 0.82,
       ),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.errorContainer.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colorScheme.error.withValues(alpha: 0.4)),
+        color: AppColors.getSurfaceCard(isDark),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              Icon(Icons.warning_amber_rounded,
-                  size: 18, color: colorScheme.error),
-              const SizedBox(width: 8),
+            children: const [
+              Icon(Icons.warning_amber_rounded, size: 18, color: AppColors.error),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Confirm deletion',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onErrorContainer,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    color: AppColors.error,
                   ),
                 ),
               ),
@@ -96,32 +101,41 @@ class ConfirmActionCard extends StatelessWidget {
                     'This cannot be undone.'
                 : 'This permanently removes "${action.targetName}". '
                     'This cannot be undone.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onErrorContainer,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.getTextSecondary(isDark),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton(
                 onPressed: onCancel,
-                child: const Text('Cancel'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.getTextSecondary(isDark),
+                ),
+                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
               ),
               const SizedBox(width: 8),
               FilledButton(
                 onPressed: onConfirm,
                 style: FilledButton.styleFrom(
-                  backgroundColor: colorScheme.error,
-                  foregroundColor: colorScheme.onError,
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 ),
-                child: const Text('Delete'),
+                child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.w700)),
               ),
             ],
           ),
         ],
       ),
-    );
+    )
+      .animate()
+      .fadeIn(duration: 250.ms)
+      .slideY(begin: 0.1, end: 0, curve: Curves.easeOutCubic);
   }
 }
 

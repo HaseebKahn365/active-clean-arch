@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:active/data/datasources/database_helper.dart';
 import 'package:active/presentation/pages/home/models/activity.dart';
 import 'package:active/presentation/pages/stats/widgets/monthly_heat_map.dart';
+import 'package:active/presentation/theme/app_theme.dart';
 
 class ActivityDetailPage extends StatefulWidget {
   const ActivityDetailPage({
@@ -15,7 +16,6 @@ class ActivityDetailPage extends StatefulWidget {
   final Activity activity;
 
   /// Formats a record timestamp day-first, e.g. "3 Mar 2026 • 2:30 PM".
-  /// Day always precedes the month; never month-first.
   static String formatRecordTimestamp(DateTime dt) {
     const months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -171,27 +171,44 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
   Future<void> _deleteRecord(ActivityRecord record) async {
     if (record.id == null) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isCount = widget.activity.type == ActivityType.count;
     final unit = isCount ? 'count' : 'min';
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
-        final colorScheme = Theme.of(dialogContext).colorScheme;
         return AlertDialog(
-          title: const Text('Delete Entry'),
+          backgroundColor: AppColors.getSurfaceCard(isDark),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: AppColors.getBorderCard(isDark)),
+          ),
+          title: Text(
+            'Delete Entry',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: AppColors.getTextPrimary(isDark),
+            ),
+          ),
           content: Text(
             'Are you sure you want to delete this record entry of ${record.quantity >= 0 ? "+${record.quantity}" : "${record.quantity}"} $unit logged on ${_formatDateTime(record.timestamp)}?',
+            style: TextStyle(color: AppColors.getTextSecondary(isDark)),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.getTextSecondary(isDark)),
+              ),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.error,
-                foregroundColor: colorScheme.onError,
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
               ),
               onPressed: () => Navigator.pop(dialogContext, true),
               child: const Text('Delete'),
@@ -238,91 +255,157 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isCount = widget.activity.type == ActivityType.count;
     final unit = isCount ? 'count' : 'min';
-    final pluralUnit = isCount ? 'counts' : 'mins';
 
     final monthTotal = _monthlyTotals.values.fold<int>(0, (sum, v) => sum + v);
     final activeDaysCount = _monthlyTotals.values.where((v) => v > 0).length;
     final avgPerActiveDay = activeDaysCount > 0 ? (monthTotal / activeDaysCount) : 0.0;
 
     return Scaffold(
+      backgroundColor: AppColors.getBackground(isDark),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.getSurfaceDark(isDark),
+                ),
+              )
             : RefreshIndicator(
+                color: AppColors.getSurfaceDark(isDark),
                 onRefresh: _loadAllData,
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 36),
                   children: [
-                    // Header with back navigation
+                    // Header with back navigation & type pill
                     Row(
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () => Navigator.pop(context),
-                          tooltip: 'Back to Stats',
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: AppColors.getSurfaceSubtle(isDark),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back, size: 18),
+                            padding: EdgeInsets.zero,
+                            color: AppColors.getTextPrimary(isDark),
+                            onPressed: () => Navigator.pop(context),
+                            tooltip: 'Back to Stats',
+                          ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             widget.activity.name,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.getTextPrimary(isDark),
+                              letterSpacing: -0.4,
                             ),
                           ),
                         ),
-                        Chip(
-                          avatar: Icon(
-                            isCount ? Icons.tag : Icons.schedule,
-                            size: 16,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: AppColors.getBorderSubtle(isDark),
+                              width: 1.5,
+                            ),
                           ),
-                          label: Text(isCount ? 'Count' : 'Time'),
-                          visualDensity: VisualDensity.compact,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isCount ? Icons.tag_rounded : Icons.schedule_rounded,
+                                size: 14,
+                                color: isCount
+                                    ? AppColors.getCountIcon(isDark)
+                                    : AppColors.getTimeIcon(isDark),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                isCount ? 'Count' : 'Time',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.getTextPrimary(isDark),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
-                    // 4 Overview Metric Cards
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _DetailMetricCard(
-                            label: 'All-Time Total',
-                            value: '${_stats.totalQuantity}',
-                            subtitle: pluralUnit,
+                    // Hero Card: All-Time Total (Solid dark container)
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurfaceCard : AppColors.lightSurfaceDark,
+                        borderRadius: BorderRadius.circular(28),
+                        border: isDark
+                            ? Border.all(color: AppColors.darkBorderCard)
+                            : null,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'All-Time Total',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.lightTextMuted,
+                              letterSpacing: 0.8,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _DetailMetricCard(
-                            label: 'Month Total',
-                            value: '$monthTotal',
-                            subtitle: pluralUnit,
+                          const SizedBox(height: 6),
+                          Text(
+                            '${_stats.totalQuantity}',
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -1.0,
+                              height: 1.0,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 6),
+                          Text(
+                            '$unit all-time',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.lightTextMuted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
+                    const SizedBox(height: 14),
+
+                    // Stat Pills Row
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Expanded(
-                          child: _DetailMetricCard(
-                            label: 'Daily Active Avg',
-                            value: avgPerActiveDay.toStringAsFixed(1),
-                            subtitle: '$unit/active day',
-                          ),
+                        _StatPill(
+                          label: 'Month',
+                          value: '$monthTotal $unit',
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _DetailMetricCard(
-                            label: 'Total Entries',
-                            value: '$_totalRecordCount',
-                            subtitle: 'entries logged',
-                          ),
+                        _StatPill(
+                          label: 'Daily avg',
+                          value: avgPerActiveDay.toStringAsFixed(1),
+                        ),
+                        _StatPill(
+                          label: 'Entries',
+                          value: '$_totalRecordCount',
                         ),
                       ],
                     ),
@@ -331,11 +414,14 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                     // Monthly Heat Map Section
                     Text(
                       'Monthly Heat Map',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.getTextPrimary(isDark),
+                        letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     MonthlyHeatMap(
                       currentMonth: _selectedMonth,
                       dailyTotals: _monthlyTotals,
@@ -344,84 +430,161 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Historical Scrollable Chart Section
+                    // Historical Scrollable Chart Section with Sliding Range Selector
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'History Trend',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.getTextPrimary(isDark),
+                            letterSpacing: -0.2,
                           ),
                         ),
-                        SegmentedButton<int>(
-                          segments: const [
-                            ButtonSegment(value: 7, label: Text('7D')),
-                            ButtonSegment(value: 30, label: Text('30D')),
-                            ButtonSegment(value: 90, label: Text('90D')),
-                          ],
-                          selected: {_selectedRangeDays},
-                          showSelectedIcon: false,
-                          style: const ButtonStyle(
-                            visualDensity: VisualDensity.compact,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        Container(
+                          width: 144,
+                          height: 36,
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: AppColors.getSurfaceSubtle(isDark),
+                            borderRadius: BorderRadius.circular(999),
                           ),
-                          onSelectionChanged: (selection) {
-                            _onRangeChanged(selection.first);
-                          },
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final itemW = constraints.maxWidth / 3;
+                              final align = _selectedRangeDays == 7
+                                  ? const Alignment(-1.0, 0.0)
+                                  : _selectedRangeDays == 30
+                                      ? const Alignment(0.0, 0.0)
+                                      : const Alignment(1.0, 0.0);
+
+                              return Stack(
+                                children: [
+                                  AnimatedAlign(
+                                    duration: const Duration(milliseconds: 240),
+                                    curve: Curves.easeOutCubic,
+                                    alignment: align,
+                                    child: Container(
+                                      width: itemW,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.getSurfaceDark(isDark),
+                                        borderRadius: BorderRadius.circular(999),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: isDark ? Colors.black45 : Colors.black12,
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 1),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _RangePill(
+                                          label: '7D',
+                                          isSelected: _selectedRangeDays == 7,
+                                          onTap: () => _onRangeChanged(7),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: _RangePill(
+                                          label: '30D',
+                                          isSelected: _selectedRangeDays == 30,
+                                          onTap: () => _onRangeChanged(30),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: _RangePill(
+                                          label: '90D',
+                                          isSelected: _selectedRangeDays == 90,
+                                          onTap: () => _onRangeChanged(90),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Card(
-                      margin: EdgeInsets.zero,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: _HistoricalTrendChart(
-                          dailyTotals: _historicalTotals,
-                          days: _selectedRangeDays,
-                          unit: unit,
+                    const SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.getSurfaceCard(isDark),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: AppColors.getBorderCard(isDark),
+                          width: 1,
                         ),
+                      ),
+                      padding: const EdgeInsets.all(18),
+                      child: _HistoricalTrendChart(
+                        dailyTotals: _historicalTotals,
+                        days: _selectedRangeDays,
+                        unit: unit,
                       ),
                     ),
                     const SizedBox(height: 24),
 
                     // Paginated Recent Record Entries Section
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Record Entries ($_totalRecordCount)',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                    Text(
+                      'Record Entries ($_totalRecordCount)',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.getTextPrimary(isDark),
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_records.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: AppColors.getSurfaceCard(isDark),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: AppColors.getBorderCard(isDark),
+                            width: 1,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (_records.isEmpty)
-                      Card(
-                        margin: EdgeInsets.zero,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24),
-                          child: Center(
-                            child: Text(
-                              'No records logged yet',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
+                        child: Center(
+                          child: Text(
+                            'No records logged yet',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.getTextMuted(isDark),
                             ),
                           ),
                         ),
                       )
                     else
-                      Card(
-                        margin: EdgeInsets.zero,
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.getSurfaceCard(isDark),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: AppColors.getBorderCard(isDark),
+                            width: 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         child: ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _records.length,
-                          separatorBuilder: (context, i) => const Divider(height: 1),
+                          separatorBuilder: (context, i) => Divider(
+                            height: 1,
+                            color: AppColors.getBorderDivider(isDark),
+                          ),
                           itemBuilder: (context, index) {
                             final r = _records[index];
                             final isPositive = r.quantity >= 0;
@@ -434,14 +597,16 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                                 children: [
                                   Text(
                                     _formatDateTime(r.timestamp),
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w500,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13.5,
+                                      color: AppColors.getTextPrimary(isDark),
                                     ),
                                   ),
                                   Text(
                                     '(${_timeAgo(r.timestamp)})',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.75),
+                                    style: TextStyle(
+                                      color: AppColors.getTextMuted(isDark),
                                       fontSize: 11,
                                     ),
                                   ),
@@ -457,23 +622,28 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: isPositive
-                                          ? colorScheme.surfaceContainerHigh
-                                          : const Color(0xFFFF7043).withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(8),
+                                          ? AppColors.getSurfaceSubtle(isDark)
+                                          : (isDark ? const Color(0xFF3B1A1E) : const Color(0xFFFFEEEE)),
+                                      borderRadius: BorderRadius.circular(999),
                                     ),
                                     child: Text(
                                       '${isPositive ? '+' : ''}${r.quantity} $unit',
                                       style: TextStyle(
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12.5,
                                         color: isPositive
-                                            ? colorScheme.primary
-                                            : const Color(0xFFE64A19),
+                                            ? AppColors.getTextPrimary(isDark)
+                                            : AppColors.error,
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 4),
                                   IconButton(
-                                    icon: const Icon(Icons.delete_outline, size: 18),
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                      color: AppColors.getTextSubtle(isDark),
+                                    ),
                                     visualDensity: VisualDensity.compact,
                                     onPressed: () => _deleteRecord(r),
                                     tooltip: 'Delete entry',
@@ -490,12 +660,21 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                       const SizedBox(height: 12),
                       Center(
                         child: _isLoadingMore
-                            ? const CircularProgressIndicator()
+                            ? CircularProgressIndicator(
+                                color: AppColors.getSurfaceDark(isDark),
+                              )
                             : TextButton.icon(
                                 onPressed: _loadMoreRecords,
-                                icon: const Icon(Icons.expand_more),
+                                icon: Icon(
+                                  Icons.expand_more,
+                                  color: AppColors.getTextPrimary(isDark),
+                                ),
                                 label: Text(
                                   'Load More (${_records.length} of $_totalRecordCount)',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.getTextPrimary(isDark),
+                                  ),
                                 ),
                               ),
                       ),
@@ -509,53 +688,84 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
   }
 }
 
-class _DetailMetricCard extends StatelessWidget {
-  const _DetailMetricCard({
+class _StatPill extends StatelessWidget {
+  const _StatPill({
     required this.label,
     required this.value,
-    required this.subtitle,
   });
 
   final String label;
   final String value;
-  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      color: colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w500,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.getSurfaceCard(isDark),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.getBorderCard(isDark),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.getTextMuted(isDark),
             ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.primary,
-              ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+              color: AppColors.getTextPrimary(isDark),
             ),
-            Text(
-              subtitle,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 10,
-              ),
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RangePill extends StatelessWidget {
+  const _RangePill({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Center(
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected
+                ? AppColors.getTextOnDark(isDark)
+                : AppColors.getTextSecondary(isDark),
+          ),
+          child: Text(label),
         ),
       ),
     );
@@ -575,8 +785,7 @@ class _HistoricalTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final values = dailyTotals.length == days ? dailyTotals : List.filled(days, 0.0);
     final rawMax = values.fold<double>(0.0, math.max);
@@ -588,7 +797,7 @@ class _HistoricalTrendChart extends StatelessWidget {
     final spots = List.generate(days, (i) => FlSpot(i.toDouble(), values[i]));
 
     return SizedBox(
-      height: 180,
+      height: 160,
       child: LineChart(
         LineChartData(
           minX: 0,
@@ -597,7 +806,7 @@ class _HistoricalTrendChart extends StatelessWidget {
           maxY: maxY,
           lineTouchData: LineTouchData(
             touchTooltipData: LineTouchTooltipData(
-              getTooltipColor: (_) => colorScheme.surfaceContainerHigh,
+              getTooltipColor: (_) => isDark ? AppColors.darkSurfaceSubtle : AppColors.lightSurfaceDark,
               getTooltipItems: (touchedSpots) {
                 return touchedSpots.map((spot) {
                   final dayOffset = (days - 1) - spot.x.toInt();
@@ -605,10 +814,11 @@ class _HistoricalTrendChart extends StatelessWidget {
                   final dateStr = ActivityDetailPage.formatShortDate(date);
                   return LineTooltipItem(
                     '$dateStr\n${spot.y.toInt()} $unit',
-                    theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurface,
+                    TextStyle(
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextOnDark,
                       fontWeight: FontWeight.bold,
-                    ) ?? const TextStyle(),
+                      fontSize: 12,
+                    ),
                   );
                 }).toList();
               },
@@ -616,13 +826,10 @@ class _HistoricalTrendChart extends StatelessWidget {
           ),
           gridData: FlGridData(
             show: true,
+            drawHorizontalLine: false,
             drawVerticalLine: true,
-            getDrawingHorizontalLine: (_) => FlLine(
-              color: colorScheme.outline.withValues(alpha: 0.12),
-              strokeWidth: 1,
-            ),
             getDrawingVerticalLine: (_) => FlLine(
-              color: colorScheme.outline.withValues(alpha: 0.08),
+              color: AppColors.getBorderSubtle(isDark),
               strokeWidth: 1,
             ),
           ),
@@ -633,7 +840,7 @@ class _HistoricalTrendChart extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 36,
+                reservedSize: 32,
                 getTitlesWidget: (value, meta) {
                   if (value == meta.max || value == meta.min) {
                     return const SizedBox.shrink();
@@ -642,9 +849,10 @@ class _HistoricalTrendChart extends StatelessWidget {
                     meta: meta,
                     child: Text(
                       value.toInt().toString(),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      style: TextStyle(
+                        color: AppColors.getTextSubtle(isDark),
                         fontSize: 10,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   );
@@ -665,9 +873,10 @@ class _HistoricalTrendChart extends StatelessWidget {
                         meta: meta,
                         child: Text(
                           'Today',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
+                          style: TextStyle(
+                            color: AppColors.getTextPrimary(isDark),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11,
                           ),
                         ),
                       );
@@ -677,8 +886,9 @@ class _HistoricalTrendChart extends StatelessWidget {
                       meta: meta,
                       child: Text(
                         ActivityDetailPage.formatShortDate(date),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        style: TextStyle(
+                          color: AppColors.getTextMuted(isDark),
+                          fontSize: 11,
                         ),
                       ),
                     );
@@ -696,7 +906,7 @@ class _HistoricalTrendChart extends StatelessWidget {
               curveSmoothness: 0.25,
               preventCurveOverShooting: true,
               barWidth: 3.0,
-              color: colorScheme.primary,
+              color: isDark ? const Color(0xFFE4E4E7) : AppColors.lightSurfaceDark,
               isStrokeCapRound: true,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
@@ -704,15 +914,22 @@ class _HistoricalTrendChart extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    colorScheme.primary.withValues(alpha: 0.38),
-                    colorScheme.primary.withValues(alpha: 0.0),
-                  ],
+                  colors: isDark
+                      ? [
+                          const Color(0xFFFFFFFF).withValues(alpha: 0.18),
+                          const Color(0xFFFFFFFF).withValues(alpha: 0.0),
+                        ]
+                      : [
+                          AppColors.lightSurfaceDark.withValues(alpha: 0.16),
+                          AppColors.lightSurfaceDark.withValues(alpha: 0.0),
+                        ],
                 ),
               ),
             ),
           ],
         ),
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
       ),
     );
   }

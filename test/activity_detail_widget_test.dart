@@ -79,6 +79,40 @@ void main() {
       // Previous month is still available
       expect(find.byTooltip('Previous month'), findsOneWidget);
     });
+
+    testWidgets('renders without overflow for large 1000+ quantities on compact screens', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final pastMonth = DateTime(2025, 7, 1);
+      final dailyTotals = {
+        1: 1000,
+        5: 2500,
+        15: -1000,
+        19: 9999,
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: MonthlyHeatMap(
+                currentMonth: pastMonth,
+                dailyTotals: dailyTotals,
+                activityType: ActivityType.count,
+                onMonthChanged: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('+1000'), findsOneWidget);
+      expect(find.text('+2500'), findsOneWidget);
+      expect(find.text('-1000'), findsOneWidget);
+      expect(find.text('+9999'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 
   group('ActivityDetailPage Widget', () {

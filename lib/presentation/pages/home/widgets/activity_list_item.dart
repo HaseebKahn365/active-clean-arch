@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:active/presentation/pages/home/models/activity.dart';
+import 'package:active/presentation/theme/app_theme.dart';
 
 class ActivityListItem extends StatefulWidget {
   const ActivityListItem({
@@ -20,8 +22,9 @@ class ActivityListItem extends StatefulWidget {
   State<ActivityListItem> createState() => _ActivityListItemState();
 }
 
-class _ActivityListItemState extends State<ActivityListItem> {
+class _ActivityListItemState extends State<ActivityListItem> with SingleTickerProviderStateMixin {
   final _recordController = TextEditingController();
+  bool _isExpanded = false;
 
   @override
   void dispose() {
@@ -35,158 +38,276 @@ class _ActivityListItemState extends State<ActivityListItem> {
     final quantity = int.tryParse(text);
     if (quantity == null || quantity == 0) return;
 
-    widget.onAddRecord(quantity);
+    final limitedQuantity = quantity.clamp(-1000, 1000);
+    widget.onAddRecord(limitedQuantity);
     _recordController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isCount = widget.activity.type == ActivityType.count;
     final singleUnit = isCount ? 'count' : 'min';
-    final hint = isCount ? 'Add count (+/-)' : 'Add minutes (+/-)';
+    final hint = isCount ? 'Add count (max 1000)' : 'Add minutes (max 1000)';
 
     final best = widget.stats.bestDayTotal;
-    // Today ties or beats the record: today *is* the best day, so show it as
-    // a live achievement rather than a target to chase.
     final isRecordToday = best > 0 && widget.stats.todayTotal >= best;
 
-    return Card(
-      margin: EdgeInsets.zero,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOutCubic,
+      decoration: BoxDecoration(
+        color: AppColors.getSurfaceCard(isDark),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: _isExpanded
+              ? (isDark ? AppColors.darkBorderSubtle : AppColors.lightSurfaceDark.withValues(alpha: 0.25))
+              : AppColors.getBorderCard(isDark),
+          width: _isExpanded ? 1.5 : 1.0,
+        ),
+        boxShadow: _isExpanded
+            ? [
+                BoxShadow(
+                  color: isDark ? const Color(0x33000000) : const Color(0x0A000000),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [],
+      ),
       clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        shape: const Border(),
-        collapsedShape: const Border(),
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        leading: CircleAvatar(
-          backgroundColor: colorScheme.surfaceContainerHigh,
-          child: Icon(
-            isCount ? Icons.tag : Icons.schedule,
-            size: 18,
-            color: colorScheme.primary,
-          ),
-        ),
-        title: Text(
-          widget.activity.name,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _BestChip(
-              best: best,
-              unit: singleUnit,
-              isRecordToday: isRecordToday,
-            ),
-            if (widget.onDelete != null) ...[
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.delete_outline, size: 20),
-                onPressed: widget.onDelete,
-                visualDensity: VisualDensity.compact,
-                tooltip: 'Delete activity',
-              ),
-            ],
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-
-          // Total record entries indicator
-          Row(
-            children: [
-              Icon(
-                Icons.history,
-                size: 16,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  '${widget.stats.entryCount} ${widget.stats.entryCount == 1 ? 'record entry' : 'record entries'} · '
-                  '${widget.stats.totalQuantity} $singleUnit total',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Segmented Cards for Today, Weekly, Monthly, and Yearly
-          Row(
-            children: [
-              Expanded(
-                child: _SegmentedStatCard(
-                  label: 'Today',
-                  value: '${widget.stats.todayTotal}',
-                  unit: singleUnit,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _SegmentedStatCard(
-                  label: 'Weekly',
-                  value: '${widget.stats.weekTotal}',
-                  unit: singleUnit,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _SegmentedStatCard(
-                  label: 'Monthly',
-                  value: '${widget.stats.monthTotal}',
-                  unit: singleUnit,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _SegmentedStatCard(
-                  label: 'Yearly',
-                  value: '${widget.stats.yearTotal}',
-                  unit: singleUnit,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Input field to add records (supports negative and positive values)
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _recordController,
-                  keyboardType: const TextInputType.numberWithOptions(signed: true),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')),
-                  ],
-                  decoration: InputDecoration(
-                    hintText: hint,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
+          InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(24),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  // Category Icon Box with subtle animated scale
+                  AnimatedScale(
+                    scale: _isExpanded ? 1.05 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutBack,
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isCount
+                            ? AppColors.getCountIconBg(isDark)
+                            : AppColors.getTimeIconBg(isDark),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        isCount ? Icons.tag_rounded : Icons.schedule_rounded,
+                        size: 22,
+                        color: isCount
+                            ? AppColors.getCountIcon(isDark)
+                            : AppColors.getTimeIcon(isDark),
+                      ),
                     ),
-                    border: const OutlineInputBorder(),
                   ),
-                  onSubmitted: (_) => _submitRecord(),
-                ),
+                  const SizedBox(width: 12),
+
+                  // Title and Subtitle
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.activity.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.getTextPrimary(isDark),
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        // Badge (Today or Best) as subtitle so long values
+                        // never squeeze the activity title.
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: _BestChip(
+                            best: best,
+                            unit: singleUnit,
+                            isRecordToday: isRecordToday,
+                            todayTotal: widget.stats.todayTotal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Delete Button
+                  if (widget.onDelete != null) ...[
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: Icon(
+                        Icons.delete_outline,
+                        size: 20,
+                        color: AppColors.getTextSubtle(isDark),
+                      ),
+                      onPressed: widget.onDelete,
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Delete activity',
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(width: 8),
-              IconButton.filledTonal(
-                onPressed: _submitRecord,
-                icon: const Icon(Icons.add, size: 20),
-                tooltip: isCount ? 'Log count' : 'Log minutes',
-              ),
-            ],
+            ),
+          ),
+
+          // Buttery Smooth Expanded Content Area using AnimatedSize & AnimatedSwitcher
+          AnimatedSize(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: _isExpanded
+                ? Container(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color: AppColors.getBorderSubtle(isDark),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.history_rounded,
+                              size: 15,
+                              color: AppColors.getTextSecondary(isDark),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${widget.stats.entryCount} ${widget.stats.entryCount == 1 ? 'record entry' : 'record entries'} · ${widget.stats.totalQuantity} $singleUnit total',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.getTextSecondary(isDark),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        // 4 Period Pill Cards in Wrap
+                        Wrap(
+                          spacing: 7,
+                          runSpacing: 7,
+                          children: [
+                            _PeriodPill(
+                              label: 'Today',
+                              value: '${widget.stats.todayTotal}',
+                            ),
+                            _PeriodPill(
+                              label: 'Weekly',
+                              value: '${widget.stats.weekTotal}',
+                            ),
+                            _PeriodPill(
+                              label: 'Monthly',
+                              value: '${widget.stats.monthTotal}',
+                            ),
+                            _PeriodPill(
+                              label: 'Yearly',
+                              value: '${widget.stats.yearTotal}',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+
+                        // Input Row for Logging Records
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _recordController,
+                                keyboardType: const TextInputType.numberWithOptions(signed: true),
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')),
+                                  _MaxValueInputFormatter(max: 1000, min: -1000),
+                                ],
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.getTextPrimary(isDark),
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: hint,
+                                  filled: true,
+                                  fillColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+                                  isDense: true,
+                                  hintStyle: TextStyle(
+                                    color: AppColors.getTextMuted(isDark),
+                                    fontSize: 14,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 18,
+                                    vertical: 12,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                    borderSide: BorderSide(
+                                      color: AppColors.getBorderSubtle(isDark),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                    borderSide: BorderSide(
+                                      color: AppColors.getBorderSubtle(isDark),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                    borderSide: BorderSide(
+                                      color: AppColors.getSurfaceDark(isDark),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                                onSubmitted: (_) => _submitRecord(),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 46,
+                              height: 46,
+                              child: ElevatedButton(
+                                onPressed: _submitRecord,
+                                style: ElevatedButton.styleFrom(
+                                  shape: const CircleBorder(),
+                                  padding: EdgeInsets.zero,
+                                  backgroundColor: AppColors.getSurfaceDark(isDark),
+                                  foregroundColor: AppColors.getTextOnDark(isDark),
+                                  elevation: 0,
+                                ),
+                                child: const Icon(Icons.add, size: 22),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  )
+                    .animate()
+                    .fadeIn(duration: 200.ms, curve: Curves.easeOut)
+                    .slideY(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOutCubic)
+                : const SizedBox.shrink(),
           ),
         ],
       ),
@@ -194,66 +315,107 @@ class _ActivityListItemState extends State<ActivityListItem> {
   }
 }
 
-/// Shows the personal best for a single day, as a target to beat.
-/// Turns into a celebratory state once today matches or exceeds it.
+class _MaxValueInputFormatter extends TextInputFormatter {
+  final int max;
+  final int min;
+
+  const _MaxValueInputFormatter({required this.max, required this.min});
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty || newValue.text == '-') {
+      return newValue;
+    }
+    final parsed = int.tryParse(newValue.text);
+    if (parsed == null) return oldValue;
+    if (parsed > max || parsed < min) {
+      return oldValue;
+    }
+    return newValue;
+  }
+}
+
 class _BestChip extends StatelessWidget {
   const _BestChip({
     required this.best,
     required this.unit,
     required this.isRecordToday,
+    required this.todayTotal,
   });
 
   final int best;
   final String unit;
   final bool isRecordToday;
+  final int todayTotal;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (best <= 0) {
-      return Chip(
-        label: const Text('No best yet'),
-        visualDensity: VisualDensity.compact,
-        labelStyle: theme.textTheme.labelMedium?.copyWith(
-          color: colorScheme.onSurfaceVariant,
+    if (best <= 0 && todayTotal <= 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.getSurfaceSubtle(isDark),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          'No best yet',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.getBadgeBestText(isDark),
+          ),
         ),
       );
     }
 
-    final background = isRecordToday
-        ? colorScheme.tertiaryContainer
-        : colorScheme.surfaceContainerHighest;
-    final foreground = isRecordToday
-        ? colorScheme.onTertiaryContainer
-        : colorScheme.onSurfaceVariant;
+    final isTodayHighlight = isRecordToday || (best <= 0 && todayTotal > 0);
+    final background = isTodayHighlight
+        ? AppColors.getBadgeTodayBg(isDark)
+        : AppColors.getBadgeBestBg(isDark);
+    final textColor = isTodayHighlight
+        ? AppColors.getBadgeTodayText(isDark)
+        : AppColors.getBadgeBestText(isDark);
+    final iconColor = isTodayHighlight
+        ? AppColors.getBadgeTodayIcon(isDark)
+        : AppColors.getBadgeBestIcon(isDark);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    final label = isRecordToday
+        ? '$todayTotal today'
+        : (best > 0 ? 'Best: $best $unit' : '$todayTotal today');
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(20),
-        border: isRecordToday
-            ? Border.all(color: colorScheme.tertiary.withValues(alpha: 0.5))
-            : null,
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isRecordToday
-                ? Icons.emoji_events_rounded
-                : Icons.military_tech_outlined,
+            isTodayHighlight
+                ? Icons.local_fire_department_rounded
+                : Icons.emoji_events_rounded,
             size: 14,
-            color: foreground,
+            color: iconColor,
           ),
           const SizedBox(width: 5),
-          Text(
-            isRecordToday ? '$best $unit today!' : 'Best: $best $unit',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: foreground,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
             ),
           ),
         ],
@@ -262,55 +424,47 @@ class _BestChip extends StatelessWidget {
   }
 }
 
-class _SegmentedStatCard extends StatelessWidget {
-  const _SegmentedStatCard({
+class _PeriodPill extends StatelessWidget {
+  const _PeriodPill({
     required this.label,
     required this.value,
-    required this.unit,
   });
 
   final String label;
   final String value;
-  final String unit;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(10),
+        color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.15),
+          color: AppColors.getBorderSubtle(isDark),
+          width: 1,
         ),
       ),
-      child: Column(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-              fontSize: 11,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.getTextMuted(isDark),
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(width: 6),
           Text(
             value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.primary,
-              fontSize: 15,
-            ),
-          ),
-          Text(
-            unit,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 9,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.getTextPrimary(isDark),
             ),
           ),
         ],
