@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:active/firebase_options.dart';
+import 'package:active/presentation/navigation/root_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -14,14 +16,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text(
-            'hello',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-        ),
-      ),
+      debugShowCheckedModeBanner: false,
+      home: const RootShell(),
     );
   }
 }
